@@ -1,8 +1,7 @@
 #define FNL_IMPL
-#include "noise.h"
+#include "fast-noise/noise.h"
 
 #include "camera.h"
-#include "cglm/cglm.h"
 #include "defines.h"
 #include "renderer.h"
 #include "window.h"

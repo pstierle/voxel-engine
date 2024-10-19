@@ -1,7 +1,7 @@
 #include "world.h"
 #include "chunk.h"
 #include "defines.h"
-#include "noise.h"
+#include "fast-noise/noise.h"
 #include <pthread.h>
 
 #ifdef _WIN32
