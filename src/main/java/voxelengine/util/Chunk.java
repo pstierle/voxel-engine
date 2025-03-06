@@ -18,10 +18,10 @@ public class Chunk {
             this.zSize = Constants.NBT_CHUNK_SIZE;
             this.data = new Color[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
         } else {
-            this.xSize = Constants.CHUNK_SIZE;
-            this.ySize = Constants.CHUNK_MAX_Y;
-            this.zSize = Constants.CHUNK_SIZE;
-            this.data = new Color[Constants.CHUNK_SIZE][Constants.CHUNK_MAX_Y][Constants.CHUNK_SIZE];
+            this.xSize = Constants.NOISE_CHUNK_SIZE;
+            this.ySize = Constants.NOISE_CHUNK_MAX_Y;
+            this.zSize = Constants.NOISE_CHUNK_SIZE;
+            this.data = new Color[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_MAX_Y][Constants.NOISE_CHUNK_SIZE];
         }
     }
 }

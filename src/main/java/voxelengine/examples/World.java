@@ -35,8 +35,7 @@ public class World implements BaseExample {
     }
 
     private boolean isAirVoxel(Chunk chunk, int x, int y, int z) {
-        if (x >= Constants.NBT_CHUNK_SIZE
-                || y >= Constants.NBT_CHUNK_SIZE || z >= Constants.NBT_CHUNK_SIZE || x < 0 || y < 0 || z < 0) {
+        if (x >= chunk.xSize || y >= chunk.ySize || z >= chunk.zSize || x < 0 || y < 0 || z < 0) {
             return true;
         }
 

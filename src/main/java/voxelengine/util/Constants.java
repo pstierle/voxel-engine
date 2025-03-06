@@ -16,6 +16,7 @@ public class Constants {
     public static boolean LOAD_WORLD_NBT = false;
     public static int FLOAT_PER_VERTEX = 9;
     public static int NBT_CHUNK_SIZE = 48;
-    public static int CHUNK_SIZE = 48;
-    public static int CHUNK_MAX_Y = 128;
+    public static int NOISE_CHUNK_SIZE = 48;
+    public static int NOISE_CHUNK_MAX_Y = 128;
+    public static int WORLD_SEED = 1337;
 }

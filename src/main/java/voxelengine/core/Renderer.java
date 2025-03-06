@@ -33,7 +33,7 @@ public class Renderer {
     public void init() {
         this.lastFrameTime = glfwGetTime();
         this.programId = glCreateProgram();
-        this.lightPosition = new Vector3d(0, 50, 0);
+        this.lightPosition = new Vector3d(0, 200, 0);
     }
 
     public void udpate() {
