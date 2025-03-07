@@ -13,32 +13,35 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class World implements BaseExample {
-    public Renderer renderer;
-    public NbtUtil nbtUtil;
-    public NoiseUtil noiseUtil;
-    public List<Chunk> chunks;
-    public Camera camera;
-    private AtomicLong lastUpdateTime = new AtomicLong(0);
     private static final long UPDATE_INTERVAL = 200_000_000;
+    private final AtomicLong lastUpdateTime = new AtomicLong(0);
+    private final ReentrantLock chunksLock = new ReentrantLock();
+
+    private Renderer renderer;
+    private NoiseUtil noiseUtil;
+    private List<Chunk> chunks;
+    private Camera camera;
     private ExecutorService threadPool;
-    private ReentrantLock chunksLock = new ReentrantLock();
     private boolean isUpdating = false;
 
     @Override
-    public void init() {
-        // Create a thread pool for chunk updates
+    public void init(Renderer renderer, Camera camera) {
+        this.renderer = renderer;
+        this.camera = camera;
+        this.noiseUtil = new NoiseUtil(renderer, camera);
+
         int processorCount = Runtime.getRuntime().availableProcessors();
         threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
 
         if (Constants.LOAD_WORLD_NBT) {
-            this.chunks = this.nbtUtil.loadWorld();
+            this.chunks = new NbtUtil(renderer).loadWorld();
         } else {
             this.chunks = new CopyOnWriteArrayList<>(this.noiseUtil.loadWorld());
         }
@@ -68,8 +71,8 @@ public class World implements BaseExample {
     }
 
     private void updateChunks() {
-        int playerX = (int) this.camera.position.x;
-        int playerZ = (int) this.camera.position.z;
+        int playerX = (int) this.camera.getPosition().x;
+        int playerZ = (int) this.camera.getPosition().z;
         int playerChunkX = Math.floorDiv(playerX, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
         int playerChunkZ = Math.floorDiv(playerZ, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
 
@@ -88,7 +91,7 @@ public class World implements BaseExample {
         chunksLock.lock();
         try {
             for (Chunk chunk : this.chunks) {
-                Vector2d pos = new Vector2d(chunk.xOffset, chunk.zOffset);
+                Vector2d pos = new Vector2d(chunk.getXOffset(), chunk.getZOffset());
                 if (!visibleChunkPositions.contains(pos)) {
                     chunksToUpdate.add(chunk);
                 } else {
@@ -103,7 +106,7 @@ public class World implements BaseExample {
         for (Vector2d pos : visibleChunkPositions) {
             boolean chunkExists = false;
             for (Chunk chunk : visibleChunks) {
-                if (chunk.xOffset == (int) pos.x && chunk.zOffset == (int) pos.y) {
+                if (chunk.getXOffset() == (int) pos.x && chunk.getZOffset() == (int) pos.y) {
                     chunkExists = true;
                     break;
                 }
@@ -122,16 +125,15 @@ public class World implements BaseExample {
 
         int updateCount = Math.min(positionsToAdd.size(), chunksToUpdate.size());
         for (int i = 0; i < updateCount; i++) {
-            final int index = i;
-            Chunk chunk = chunksToUpdate.get(index);
-            Vector2d position = positionsToAdd.get(index);
+            Chunk chunk = chunksToUpdate.get(i);
+            Vector2d position = positionsToAdd.get(i);
 
-            chunk.xOffset = (int) position.x;
-            chunk.zOffset = (int) position.y;
+            chunk.setXOffset((int) position.x);
+            chunk.setZOffset((int) position.y);
 
-            Color[][][] chunkData = this.noiseUtil.generateChunkData(chunk.xOffset, chunk.zOffset);
+            Color[][][] chunkData = this.noiseUtil.generateChunkData(chunk.getXOffset(), chunk.getZOffset());
             chunk.loadData(chunkData);
-            chunk.needsBufferUpdate = true;
+            chunk.setNeedsBufferUpdate(true);
         }
     }
 
@@ -139,8 +141,8 @@ public class World implements BaseExample {
     public void render() {
         int uploadedCount = 0;
         for (Chunk chunk : this.chunks) {
-            if (chunk.needsBufferUpdate && uploadedCount < Constants.NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME) {
-                chunk.uploadBuffers(this.renderer.programId);
+            if (chunk.isNeedsBufferUpdate() && uploadedCount < Constants.NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME) {
+                chunk.uploadBuffers(this.renderer.getProgramId());
                 chunk.render();
                 uploadedCount++;
             } else {

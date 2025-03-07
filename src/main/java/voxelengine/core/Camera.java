@@ -5,14 +5,20 @@ import voxelengine.util.Constants;
 import voxelengine.window.Window;
 
 public class Camera {
-    public Vector3d position = new Vector3d(160, 200, 433);
-    public Vector3d front = new Vector3d(0, 0, -1);
-    public Vector3d up = new Vector3d(0, 1, 0);
-    public double fov = 90;
-    public double yaw = 0;
-    public double pitch = 0;
-    public Renderer renderer;
-    public Window window;
+    private final Vector3d position = new Vector3d(160, 200, 433);
+    private final Vector3d front = new Vector3d(0, 0, -1);
+    private final Vector3d up = new Vector3d(0, 1, 0);
+
+    private Renderer renderer;
+    private Window window;
+
+    private double yaw = 0;
+    private double pitch = 0;
+
+    public void init(Renderer renderer, Window window) {
+        this.renderer = renderer;
+        this.window = window;
+    }
 
     public void handleMouseMove(double oldX, double newX, double oldY, double newY) {
         double xOffset = newX - oldX;
@@ -31,7 +37,7 @@ public class Camera {
     }
 
     public void update() {
-        double deltaTime = this.renderer.deltaTime;
+        double deltaTime = this.renderer.getDeltaTime();
 
         if (this.window.keyboard.wPressed) {
             Vector3d intermediate = new Vector3d();
@@ -67,5 +73,17 @@ public class Camera {
         direction.normalize();
 
         this.front.set(direction);
+    }
+
+    public Vector3d getPosition() {
+        return position;
+    }
+
+    public Vector3d getFront() {
+        return front;
+    }
+
+    public Vector3d getUp() {
+        return up;
     }
 }

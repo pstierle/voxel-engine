@@ -4,9 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VoxelFace {
-    public List<VoxelFaceVertex> vertices;
-    public List<Integer> indices;
-    public FaceDirection direction;
+    private final List<VoxelFaceVertex> vertices;
+    private final FaceDirection direction;
+    private List<Integer> indices;
+
+    public List<VoxelFaceVertex> getVertices() {
+        return vertices;
+    }
+
+    public List<Integer> getIndices() {
+        return indices;
+    }
+
+    public FaceDirection getDirection() {
+        return direction;
+    }
+
+    public void setIndices(List<Integer> indices) {
+        this.indices = indices;
+    }
 
     public VoxelFace(FaceDirection direction, int verticesCount) {
         this.direction = direction;

@@ -9,17 +9,19 @@ import java.util.List;
 import java.util.Random;
 
 public class NoiseUtil {
-    public Renderer renderer;
-    public Camera camera;
     private final SimplexNoise simplexNoise;
+    private final Renderer renderer;
+    private final Camera camera;
 
-    public NoiseUtil() {
+    public NoiseUtil(Renderer renderer, Camera camera) {
         this.simplexNoise = new SimplexNoise(Constants.WORLD_SEED);
+        this.renderer = renderer;
+        this.camera = camera;
     }
 
     public List<Chunk> loadWorld() {
-        int playerX = (int) this.camera.position.x;
-        int playerZ = (int) this.camera.position.z;
+        int playerX = (int) this.camera.getPosition().x;
+        int playerZ = (int) this.camera.getPosition().z;
 
         int playerChunkX = (playerX / Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
         int playerChunkZ = (playerZ / Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
@@ -29,9 +31,9 @@ public class NoiseUtil {
         for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
                 Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
-                Color[][][] chunkData = generateChunkData(chunk.xOffset, chunk.zOffset);
+                Color[][][] chunkData = generateChunkData(dx, dz);
                 chunk.loadData(chunkData);
-                chunk.uploadBuffers(this.renderer.programId);
+                chunk.uploadBuffers(this.renderer.getProgramId());
                 chunks.add(chunk);
             }
         }
@@ -49,21 +51,15 @@ public class NoiseUtil {
 
                 for (int y = 0; y < Constants.NOISE_CHUNK_MAX_Y; y++) {
                     if (y < terrainHeight) {
-                        Color color = new Color();
+                        Color color;
 
                         if (y >= terrainHeight - 1) {
-                            color.r = 0.2f;
-                            color.g = 0.8f;
-                            color.b = 0.2f;
+                            color = new Color(0.2f, 0.8f, 0.2f);
                         } else if (y >= terrainHeight - 4) {
-                            color.r = 0.6f;
-                            color.g = 0.4f;
-                            color.b = 0.2f;
+                            color = new Color(0.6f, 0.4f, 0.2f);
                         } else {
                             float depth = 1.0f - ((float) (y) / terrainHeight) * 0.5f;
-                            color.r = 0.5f * depth;
-                            color.g = 0.5f * depth;
-                            color.b = 0.5f * depth;
+                            color = new Color(0.5f * depth, 0.5f * depth, 0.5f * depth);
                         }
                         double caveNoise = simplexNoise.noise(
                                 worldX * 3,
@@ -82,13 +78,12 @@ public class NoiseUtil {
         return data;
     }
 
-    private class SimplexNoise {
-        private final int[] permutation;
+    private static class SimplexNoise {
         private final int[] p;
 
         public SimplexNoise(long seed) {
             Random random = new Random(seed);
-            permutation = new int[256];
+            int[] permutation = new int[256];
             p = new int[512];
 
             for (int i = 0; i < 256; i++) {

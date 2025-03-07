@@ -1,22 +1,30 @@
 package voxelengine.util.voxel;
 
 public class Color {
-    public float r, g, b;
+    private float r, g, b;
 
-    public Color() {
-        this.r = 0.0f;
-        this.g = 0.0f;
-        this.b = 0.0f;
+    public Color(float r, float g, float b) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+    }
+
+    public float getR() {
+        return r;
+    }
+
+    public float getG() {
+        return g;
+    }
+
+    public float getB() {
+        return b;
     }
 
     public static Color fromString(String colorString) {
         String[] parts = colorString.split(",");
         if (parts.length == 3) {
-            Color color = new Color();
-            color.r = Float.parseFloat(parts[0]);
-            color.g = Float.parseFloat(parts[1]);
-            color.b = Float.parseFloat(parts[2]);
-            return color;
+            return new Color(Float.parseFloat(parts[0]), Float.parseFloat(parts[1]), Float.parseFloat(parts[2]));
         } else {
             throw new IllegalArgumentException("Invalid color string: " + colorString);
         }

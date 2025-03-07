@@ -23,7 +23,11 @@ import java.util.List;
 import java.util.Map;
 
 public class NbtUtil {
-    public Renderer renderer;
+    private final Renderer renderer;
+
+    public NbtUtil(Renderer renderer) {
+        this.renderer = renderer;
+    }
 
     public List<Chunk> loadWorld() {
         List<Chunk> chunks = new ArrayList<>();
@@ -31,7 +35,7 @@ public class NbtUtil {
             URL colorsUrl = NbtUtil.class.getClassLoader().getResource("world/colors.json");
 
             if (colorsUrl == null) {
-                throw new RuntimeException("Colors json not found");
+                throw new IllegalArgumentException("Colors json not found");
             }
 
             File colorsFile = new File(colorsUrl.toURI());
@@ -43,7 +47,7 @@ public class NbtUtil {
             URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_FOLDER_PATH);
 
             if (folderUrl == null) {
-                throw new RuntimeException(String.format("Folder %s not found", Constants.NBT_FOLDER_PATH));
+                throw new IllegalArgumentException(String.format("Folder %s not found", Constants.NBT_FOLDER_PATH));
             }
 
             Path folderPath = Paths.get(folderUrl.toURI());
@@ -67,7 +71,7 @@ public class NbtUtil {
                     }
                     int[] chunkOffset = parseChunkOffset(entry.getFileName().toString());
                     Chunk chunk = new Chunk(chunkOffset[0], chunkOffset[1], chunkOffset[2], Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);
-                    chunk.data = new Color[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
+                    Color[][][] data = new Color[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
                     ListTag<Tag> blocksTag = compoundTag.getList("blocks");
                     int voxelCount = 0;
                     for (Tag tag : blocksTag) {
@@ -80,19 +84,19 @@ public class NbtUtil {
                         Integer xPos = ((IntTag) positions.get(0)).getValue();
                         Integer yPos = ((IntTag) positions.get(1)).getValue();
                         Integer zPos = ((IntTag) positions.get(2)).getValue();
-                        chunk.data[xPos][yPos][zPos] = color;
+                        data[xPos][yPos][zPos] = color;
                         voxelCount++;
                     }
                     if (voxelCount > 0) {
-                        chunk.numVoxels = voxelCount;
-                        chunk.loadData(chunk.data);
-                        chunk.uploadBuffers(this.renderer.programId);
+                        chunk.setNumVoxels(voxelCount);
+                        chunk.loadData(data);
+                        chunk.uploadBuffers(this.renderer.getProgramId());
                         chunks.add(chunk);
                     }
                 }
             }
         } catch (IOException | RuntimeException | URISyntaxException e) {
-            System.out.println(e);
+            Log.error(e.getMessage());
         }
 
         return chunks;

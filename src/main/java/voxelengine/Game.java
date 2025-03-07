@@ -8,8 +8,6 @@ import voxelengine.examples.Voxel2d;
 import voxelengine.examples.Voxel3d;
 import voxelengine.examples.World;
 import voxelengine.util.Constants;
-import voxelengine.util.NbtUtil;
-import voxelengine.util.NoiseUtil;
 import voxelengine.window.Window;
 
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
@@ -25,57 +23,35 @@ public class Game {
     private Window window;
     private BaseExample example;
 
-
     public void init() {
         this.camera = new Camera();
         this.renderer = new Renderer();
         this.window = new Window();
 
-        this.renderer.camera = this.camera;
-        this.renderer.window = this.window;
 
         this.window.renderer = this.renderer;
         this.window.camera = this.camera;
 
-        this.camera.renderer = this.renderer;
-        this.camera.window = this.window;
-
-        NbtUtil nbtUtil = new NbtUtil();
-        NoiseUtil noiseUtil = new NoiseUtil();
-        nbtUtil.renderer = this.renderer;
-        noiseUtil.renderer = this.renderer;
-        noiseUtil.camera = this.camera;
-
+        this.camera.init(renderer, window);
         this.window.init();
-        this.renderer.init();
+        this.renderer.init(camera, window);
 
         switch (Constants.EXAMPLE) {
             case TRIANGLE_2D:
-                Triangle2d triangle2d = new Triangle2d();
-                triangle2d.renderer = this.renderer;
-                this.example = triangle2d;
+                this.example = new Triangle2d();
                 break;
             case VOXEL_2D:
-                Voxel2d voxel2d = new Voxel2d();
-                voxel2d.renderer = this.renderer;
-                this.example = voxel2d;
+                this.example = new Voxel2d();
                 break;
             case VOXEL_3D:
-                Voxel3d voxel3d = new Voxel3d();
-                voxel3d.renderer = this.renderer;
-                this.example = voxel3d;
+                this.example = new Voxel3d();
                 break;
             case WORLD:
-                World world = new World();
-                world.renderer = this.renderer;
-                world.nbtUtil = nbtUtil;
-                world.noiseUtil = noiseUtil;
-                world.camera = this.camera;
-                this.example = world;
+                this.example = new World();
                 break;
         }
 
-        this.example.init();
+        this.example.init(renderer, camera);
     }
 
     public void loop() {
@@ -83,7 +59,7 @@ public class Game {
             this.window.input();
 
             this.camera.update();
-            this.renderer.udpate();
+            this.renderer.update();
             this.example.update();
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

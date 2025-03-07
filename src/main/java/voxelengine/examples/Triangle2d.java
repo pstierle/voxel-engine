@@ -1,17 +1,15 @@
 package voxelengine.examples;
 
-import org.lwjgl.system.MemoryStack;
+import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
-import voxelengine.core.Shader;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL46.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL46.GL_FLOAT;
-import static org.lwjgl.opengl.GL46.GL_FRAGMENT_SHADER;
 import static org.lwjgl.opengl.GL46.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL46.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL46.GL_VERTEX_SHADER;
 import static org.lwjgl.opengl.GL46.glBindBuffer;
 import static org.lwjgl.opengl.GL46.glBindVertexArray;
 import static org.lwjgl.opengl.GL46.glBufferData;
@@ -23,31 +21,30 @@ import static org.lwjgl.opengl.GL46.glUseProgram;
 import static org.lwjgl.opengl.GL46.glVertexAttribPointer;
 
 public class Triangle2d implements BaseExample {
-    public Renderer renderer;
-    public int vboId;
-    public int vaoId;
-
     @Override
-    public void init() {
-        float vertices[] = {
+    public void init(Renderer renderer, Camera camera) {
+        int vboId;
+        int vaoId;
+
+        float[] vertices = {
                 // Triangle
                 -0.5f, -0.5f, 0.0f, // Bottom left
                 0.5f, -0.5f, 0.0f, // Bottom Right
                 0.0f, 0.5f, 0.0f // Top
         };
 
-        glUseProgram(this.renderer.programId);
-        this.vboId = glGenBuffers();
-        this.vaoId = glGenVertexArrays();
+        glUseProgram(renderer.getProgramId());
+        vboId = glGenBuffers();
+        vaoId = glGenVertexArrays();
 
-        glBindVertexArray(this.vaoId);
-        glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
+        glBindVertexArray(vaoId);
+        glBindBuffer(GL_ARRAY_BUFFER, vboId);
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer verticesBuffer = stack.mallocFloat(vertices.length);
-            verticesBuffer.put(vertices).flip();
-            glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
-        }
+        FloatBuffer verticesBuffer = ByteBuffer.allocateDirect(vertices.length * Float.BYTES)
+                .order(java.nio.ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        verticesBuffer.put(vertices).flip();
+        glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * Float.BYTES, 0);
         glEnableVertexAttribArray(0);
@@ -55,6 +52,7 @@ public class Triangle2d implements BaseExample {
 
     @Override
     public void update() {
+        //
     }
 
     @Override
@@ -64,5 +62,6 @@ public class Triangle2d implements BaseExample {
 
     @Override
     public void destroy() {
+        //
     }
 }

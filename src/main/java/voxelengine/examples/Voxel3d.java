@@ -1,12 +1,12 @@
 package voxelengine.examples;
 
-import org.lwjgl.system.MemoryStack;
+import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
-import voxelengine.core.Shader;
 import voxelengine.util.voxel.Voxel;
 import voxelengine.util.voxel.VoxelFace;
 import voxelengine.util.voxel.VoxelFaceVertex;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL46.GL_ARRAY_BUFFER;
@@ -24,43 +24,42 @@ import static org.lwjgl.opengl.GL46.glUseProgram;
 import static org.lwjgl.opengl.GL46.glVertexAttribPointer;
 
 public class Voxel3d implements BaseExample {
-    public Renderer renderer;
-    public int vboId;
-    public int vaoId;
-
     @Override
-    public void init() {
+    public void init(Renderer renderer, Camera camera) {
+        int vboId;
+        int vaoId;
+
         Voxel voxel = new Voxel();
         float[] vertices = new float[6 * 6 * 9];
         int verticesIndex = 0;
 
-        for (VoxelFace face : voxel.faces) {
-            for (VoxelFaceVertex vertex : face.vertices) {
-                vertices[verticesIndex++] = (float) vertex.position.x;
-                vertices[verticesIndex++] = (float) vertex.position.y;
-                vertices[verticesIndex++] = (float) vertex.position.z;
+        for (VoxelFace face : voxel.getFaces()) {
+            for (VoxelFaceVertex vertex : face.getVertices()) {
+                vertices[verticesIndex++] = (float) vertex.getPosition().x;
+                vertices[verticesIndex++] = (float) vertex.getPosition().y;
+                vertices[verticesIndex++] = (float) vertex.getPosition().z;
 
                 vertices[verticesIndex++] = 1.0f;
-                vertices[verticesIndex++] = vertex.color.g;
-                vertices[verticesIndex++] = vertex.color.b;
+                vertices[verticesIndex++] = 0.0f;
+                vertices[verticesIndex++] = 0.0f;
 
-                vertices[verticesIndex++] = (float) vertex.normal.x;
-                vertices[verticesIndex++] = (float) vertex.normal.y;
-                vertices[verticesIndex++] = (float) vertex.normal.z;
+                vertices[verticesIndex++] = (float) vertex.getNormal().x;
+                vertices[verticesIndex++] = (float) vertex.getNormal().y;
+                vertices[verticesIndex++] = (float) vertex.getNormal().z;
             }
         }
 
-        glUseProgram(this.renderer.programId);
-        this.vboId = glGenBuffers();
-        this.vaoId = glGenVertexArrays();
-        glBindVertexArray(this.vaoId);
-        glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
+        glUseProgram(renderer.getProgramId());
+        vboId = glGenBuffers();
+        vaoId = glGenVertexArrays();
+        glBindVertexArray(vaoId);
+        glBindBuffer(GL_ARRAY_BUFFER, vboId);
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer verticesBuffer = stack.mallocFloat(vertices.length);
-            verticesBuffer.put(vertices).flip();
-            glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
-        }
+        FloatBuffer verticesBuffer = ByteBuffer.allocateDirect(vertices.length * Float.BYTES)
+                .order(java.nio.ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        verticesBuffer.put(vertices).flip();
+        glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, false, 9 * Float.BYTES, 0);
         glEnableVertexAttribArray(0);
@@ -74,6 +73,7 @@ public class Voxel3d implements BaseExample {
 
     @Override
     public void update() {
+        //
     }
 
     @Override
@@ -83,5 +83,6 @@ public class Voxel3d implements BaseExample {
 
     @Override
     public void destroy() {
+        //
     }
 }

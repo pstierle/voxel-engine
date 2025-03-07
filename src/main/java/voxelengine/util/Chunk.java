@@ -27,26 +27,52 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Chunk {
-    private static int nextId = 0;
-    public int id;
-    public int xOffset;
-    public int yOffset;
-    public int zOffset;
-    public int xSize;
-    public int ySize;
-    public int zSize;
-    public int vboId;
-    public int vaoId;
-    public int eboId;
-    public int numVoxels;
-    public int indicesCount;
-    public Color[][][] data;
-    public float[] vertices;
-    public int[] indices;
-    public boolean needsBufferUpdate = false;
+    private final int xSize;
+    private final int ySize;
+    private final int zSize;
+    private final int vboId;
+    private final int vaoId;
+    private final int eboId;
+    private int xOffset;
+    private final int yOffset;
+    private int zOffset;
+
+    private int numVoxels;
+    private int indicesCount;
+    private Color[][][] data;
+    private float[] vertices;
+    private int[] indices;
+    private boolean needsBufferUpdate = false;
+
+    public int getXOffset() {
+        return xOffset;
+    }
+
+    public int getZOffset() {
+        return zOffset;
+    }
+
+    public void setXOffset(int xOffset) {
+        this.xOffset = xOffset;
+    }
+
+    public void setZOffset(int zOffset) {
+        this.zOffset = zOffset;
+    }
+
+    public void setNeedsBufferUpdate(boolean needsBufferUpdate) {
+        this.needsBufferUpdate = needsBufferUpdate;
+    }
+
+    public boolean isNeedsBufferUpdate() {
+        return needsBufferUpdate;
+    }
+
+    public void setNumVoxels(int numVoxels) {
+        this.numVoxels = numVoxels;
+    }
 
     public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ, int xSize, int ySize, int zSize) {
-        this.id = nextId++;
         this.xOffset = chunkOffsetX;
         this.yOffset = chunkOffsetY;
         this.zOffset = chunkOffsetZ;
@@ -79,29 +105,29 @@ public class Chunk {
                         continue;
                     }
                     int voxelVerticesStart = verticesIndex;
-                    for (VoxelFace face : voxel.faces) {
+                    for (VoxelFace face : voxel.getFaces()) {
                         if (Constants.FILTER_FACES && this.skipFace(face, x, y, z)) {
                             continue;
                         }
                         int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.FLOAT_PER_VERTEX;
-                        for (VoxelFaceVertex vertex : face.vertices) {
-                            this.vertices[verticesIndex++] = (float) vertex.position.x + this.xOffset + x;
-                            this.vertices[verticesIndex++] = (float) vertex.position.y + this.yOffset + y;
-                            this.vertices[verticesIndex++] = (float) vertex.position.z + this.zOffset + z;
+                        for (VoxelFaceVertex vertex : face.getVertices()) {
+                            this.vertices[verticesIndex++] = (float) vertex.getPosition().x + this.xOffset + x;
+                            this.vertices[verticesIndex++] = (float) vertex.getPosition().y + this.yOffset + y;
+                            this.vertices[verticesIndex++] = (float) vertex.getPosition().z + this.zOffset + z;
 
-                            this.vertices[verticesIndex++] = color.r;
-                            this.vertices[verticesIndex++] = color.g;
-                            this.vertices[verticesIndex++] = color.b;
+                            this.vertices[verticesIndex++] = color.getR();
+                            this.vertices[verticesIndex++] = color.getG();
+                            this.vertices[verticesIndex++] = color.getB();
 
-                            this.vertices[verticesIndex++] = (float) vertex.normal.x;
-                            this.vertices[verticesIndex++] = (float) vertex.normal.y;
-                            this.vertices[verticesIndex++] = (float) vertex.normal.z;
+                            this.vertices[verticesIndex++] = (float) vertex.getNormal().x;
+                            this.vertices[verticesIndex++] = (float) vertex.getNormal().y;
+                            this.vertices[verticesIndex++] = (float) vertex.getNormal().z;
                         }
                         if (Constants.INSTANCE_RENDERING) {
                             int baseOffset = voxelVerticesStart / Constants.FLOAT_PER_VERTEX;
-                            for (Integer index : face.indices) {
+                            for (Integer index : face.getIndices()) {
                                 int localIndex = index
-                                        % face.vertices.size();
+                                        % face.getVertices().size();
                                 this.indices[indicesIndex++] = baseOffset + faceVerticesOffset + localIndex;
                             }
                         }
@@ -182,46 +208,28 @@ public class Chunk {
                 * Constants.FLOAT_PER_VERTEX;
     }
 
-    private boolean isAirVoxel(int x, int y, int z) {
+    private boolean isSolidVoxel(int x, int y, int z) {
         if (x >= this.xSize || y >= this.ySize || z >= this.zSize || x < 0 || y < 0 || z < 0) {
-            return true;
+            return false;
         }
 
-        return this.data[x][y][z] == null;
+        return this.data[x][y][z] != null;
     }
 
     private boolean skipFace(VoxelFace face, int x, int y, int z) {
-        switch (face.direction) {
+        switch (face.getDirection()) {
             case FRONT:
-                if (!isAirVoxel(x, y, z + 1)) {
-                    return true;
-                }
-                break;
+                return isSolidVoxel(x, y, z + 1);
             case BACK:
-                if (!isAirVoxel(x, y, z - 1)) {
-                    return true;
-                }
-                break;
+                return isSolidVoxel(x, y, z - 1);
             case LEFT:
-                if (!isAirVoxel(x - 1, y, z)) {
-                    return true;
-                }
-                break;
+                return isSolidVoxel(x - 1, y, z);
             case RIGHT:
-                if (!isAirVoxel(x + 1, y, z)) {
-                    return true;
-                }
-                break;
+                return isSolidVoxel(x + 1, y, z);
             case TOP:
-                if (!isAirVoxel(x, y + 1, z)) {
-                    return true;
-                }
-                break;
+                return isSolidVoxel(x, y + 1, z);
             case BOTTOM:
-                if (!isAirVoxel(x, y - 1, z)) {
-                    return true;
-                }
-                break;
+                return isSolidVoxel(x, y - 1, z);
         }
         return false;
     }
