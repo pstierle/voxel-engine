@@ -1,16 +1,31 @@
 package voxelengine.examples;
 
-import static org.lwjgl.opengl.GL46.*;
-
-import java.nio.FloatBuffer;
-
 import org.lwjgl.system.MemoryStack;
-
 import voxelengine.core.Renderer;
 import voxelengine.core.Shader;
 
+import java.nio.FloatBuffer;
+
+import static org.lwjgl.opengl.GL46.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL46.GL_FLOAT;
+import static org.lwjgl.opengl.GL46.GL_FRAGMENT_SHADER;
+import static org.lwjgl.opengl.GL46.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL46.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL46.GL_VERTEX_SHADER;
+import static org.lwjgl.opengl.GL46.glBindBuffer;
+import static org.lwjgl.opengl.GL46.glBindVertexArray;
+import static org.lwjgl.opengl.GL46.glBufferData;
+import static org.lwjgl.opengl.GL46.glDrawArrays;
+import static org.lwjgl.opengl.GL46.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL46.glGenBuffers;
+import static org.lwjgl.opengl.GL46.glGenVertexArrays;
+import static org.lwjgl.opengl.GL46.glUseProgram;
+import static org.lwjgl.opengl.GL46.glVertexAttribPointer;
+
 public class Voxel2d implements BaseExample {
     public Renderer renderer;
+    public int vboId;
+    public int vaoId;
 
     @Override
     public void init() {
@@ -68,11 +83,11 @@ public class Voxel2d implements BaseExample {
         };
 
         glUseProgram(this.renderer.programId);
-        this.renderer.vboId = glGenBuffers();
-        this.renderer.vaoId = glGenVertexArrays();
+        this.vboId = glGenBuffers();
+        this.vaoId = glGenVertexArrays();
 
-        glBindVertexArray(this.renderer.vaoId);
-        glBindBuffer(GL_ARRAY_BUFFER, this.renderer.vboId);
+        glBindVertexArray(this.vaoId);
+        glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer verticesBuffer = stack.mallocFloat(vertices.length);
@@ -91,5 +106,9 @@ public class Voxel2d implements BaseExample {
     @Override
     public void render() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    @Override
+    public void destroy() {
     }
 }

@@ -2,10 +2,20 @@ package voxelengine.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
-import static org.lwjgl.opengl.GL46.*;
+import static org.lwjgl.opengl.GL46.GL_COMPILE_STATUS;
+import static org.lwjgl.opengl.GL46.GL_INFO_LOG_LENGTH;
+import static org.lwjgl.opengl.GL46.GL_TRUE;
+import static org.lwjgl.opengl.GL46.glAttachShader;
+import static org.lwjgl.opengl.GL46.glCompileShader;
+import static org.lwjgl.opengl.GL46.glCreateShader;
+import static org.lwjgl.opengl.GL46.glDeleteShader;
+import static org.lwjgl.opengl.GL46.glGetShaderInfoLog;
+import static org.lwjgl.opengl.GL46.glGetShaderi;
+import static org.lwjgl.opengl.GL46.glLinkProgram;
+import static org.lwjgl.opengl.GL46.glShaderSource;
+
 
 public class Shader {
     public static void checkShaderStatus(int shaderId) {

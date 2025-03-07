@@ -1,5 +1,15 @@
 package voxelengine.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.dewy.nbt.Nbt;
+import dev.dewy.nbt.api.Tag;
+import dev.dewy.nbt.tags.collection.CompoundTag;
+import dev.dewy.nbt.tags.collection.ListTag;
+import dev.dewy.nbt.tags.primitive.IntTag;
+import dev.dewy.nbt.tags.primitive.StringTag;
+import voxelengine.core.Renderer;
+import voxelengine.util.voxel.Color;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -11,17 +21,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import dev.dewy.nbt.Nbt;
-import dev.dewy.nbt.api.Tag;
-import dev.dewy.nbt.tags.collection.CompoundTag;
-import dev.dewy.nbt.tags.collection.ListTag;
-import dev.dewy.nbt.tags.primitive.IntTag;
-import dev.dewy.nbt.tags.primitive.StringTag;
-import voxelengine.core.Renderer;
-import voxelengine.util.voxel.Color;
 
 public class NbtUtil {
     public Renderer renderer;
@@ -49,10 +48,8 @@ public class NbtUtil {
 
             Path folderPath = Paths.get(folderUrl.toURI());
             boolean colorsLoaded = false;
-            int voxelCount = 0;
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(folderPath)) {
                 for (Path entry : stream) {
-
                     Nbt nbt = new Nbt();
                     CompoundTag compoundTag = nbt.fromFile(entry.toFile());
 
@@ -68,13 +65,11 @@ public class NbtUtil {
                         }
                         colorsLoaded = true;
                     }
-
-                    Chunk chunk = new Chunk();
                     int[] chunkOffset = parseChunkOffset(entry.getFileName().toString());
-                    chunk.xOffset = chunkOffset[0];
-                    chunk.yOffset = chunkOffset[1];
-                    chunk.zOffset = chunkOffset[2];
+                    Chunk chunk = new Chunk(chunkOffset[0], chunkOffset[1], chunkOffset[2], Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);
+                    chunk.data = new Color[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
                     ListTag<Tag> blocksTag = compoundTag.getList("blocks");
+                    int voxelCount = 0;
                     for (Tag tag : blocksTag) {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> tagMap = (Map<String, Object>) tag.getValue();
@@ -88,10 +83,13 @@ public class NbtUtil {
                         chunk.data[xPos][yPos][zPos] = color;
                         voxelCount++;
                     }
-                    chunks.add(chunk);
+                    if (voxelCount > 0) {
+                        chunk.numVoxels = voxelCount;
+                        chunk.load(this.renderer.programId, chunk.data);
+                        chunks.add(chunk);
+                    }
                 }
             }
-            this.renderer.numVoxels = voxelCount;
         } catch (IOException | RuntimeException | URISyntaxException e) {
             System.out.println(e);
         }
@@ -109,7 +107,7 @@ public class NbtUtil {
             int x = Integer.parseInt(matcher.group(1));
             int y = Integer.parseInt(matcher.group(2));
             int z = Integer.parseInt(matcher.group(3));
-            return new int[] { x, y, z };
+            return new int[]{x, y, z};
         } else {
             throw new IllegalArgumentException("Input string does not match the expected pattern.");
         }

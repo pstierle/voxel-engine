@@ -1,12 +1,11 @@
 package voxelengine.core;
 
 import org.joml.Vector3d;
-
 import voxelengine.util.Constants;
 import voxelengine.window.Window;
 
 public class Camera {
-    public Vector3d position = new Vector3d(0, 2, 0);
+    public Vector3d position = new Vector3d(160, 200, 433);
     public Vector3d front = new Vector3d(0, 0, -1);
     public Vector3d up = new Vector3d(0, 1, 0);
     public double fov = 90;

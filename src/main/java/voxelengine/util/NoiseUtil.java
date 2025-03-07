@@ -1,14 +1,16 @@
 package voxelengine.util;
 
+import voxelengine.core.Camera;
+import voxelengine.core.Renderer;
+import voxelengine.util.voxel.Color;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import voxelengine.core.Renderer;
-import voxelengine.util.voxel.Color;
-
 public class NoiseUtil {
     public Renderer renderer;
+    public Camera camera;
     private final SimplexNoise simplexNoise;
 
     public NoiseUtil() {
@@ -16,82 +18,67 @@ public class NoiseUtil {
     }
 
     public List<Chunk> loadWorld() {
+        int playerX = (int) this.camera.position.x;
+        int playerZ = (int) this.camera.position.z;
+
+        int playerChunkX = (playerX / Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
+        int playerChunkZ = (playerZ / Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
+
         List<Chunk> chunks = new ArrayList<>();
-        int voxelCount = 0;
 
-        for (int dx = -2; dx < 2; dx++) {
-            for (int dz = -2; dz < 2; dz++) {
-                Chunk chunk = generateChunk(dx, dz);
+        for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
+            for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
+                Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
+                Color[][][] chunkData = generateChunkData(chunk.xOffset, chunk.zOffset);
+                chunk.load(this.renderer.programId, chunkData);
                 chunks.add(chunk);
-
-                for (int x = 0; x < chunk.xSize; x++) {
-                    for (int y = 0; y < chunk.ySize; y++) {
-                        for (int z = 0; z < chunk.zSize; z++) {
-                            if (chunk.data[x][y][z] != null) {
-                                voxelCount++;
-                            }
-                        }
-                    }
-                }
             }
         }
-
-        this.renderer.numVoxels = voxelCount;
         return chunks;
     }
 
-    public Chunk generateChunk(int chunkX, int chunkZ) {
-        Chunk chunk = new Chunk();
-        chunk.xOffset = chunkX * Constants.NOISE_CHUNK_SIZE;
-        chunk.yOffset = 0;
-        chunk.zOffset = chunkZ * Constants.NOISE_CHUNK_SIZE;
-
-        for (int x = 0; x < chunk.xSize; x++) {
-            for (int z = 0; z < chunk.zSize; z++) {
-                float worldX = (chunk.xOffset + x) * 0.01f;
-                float worldZ = (chunk.zOffset + z) * 0.01f;
-
+    public Color[][][] generateChunkData(int chunkOffsetX, int chunkOffsetZ) {
+        Color[][][] data = new Color[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_MAX_Y][Constants.NOISE_CHUNK_SIZE];
+        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
+            for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
+                float worldX = (chunkOffsetX + x) * 0.01f;
+                float worldZ = (chunkOffsetZ + z) * 0.01f;
                 double heightNoise = (simplexNoise.noise(worldX, worldZ) + 1) * 0.5;
                 int terrainHeight = (int) (heightNoise * Constants.NOISE_CHUNK_MAX_Y * 0.8f);
 
-                for (int y = 0; y < chunk.ySize; y++) {
-                    int worldY = chunk.yOffset + y;
-
-                    if (worldY < terrainHeight) {
+                for (int y = 0; y < Constants.NOISE_CHUNK_MAX_Y; y++) {
+                    if (y < terrainHeight) {
                         Color color = new Color();
 
-                        if (worldY >= terrainHeight - 1) {
+                        if (y >= terrainHeight - 1) {
                             color.r = 0.2f;
                             color.g = 0.8f;
                             color.b = 0.2f;
-                        } else if (worldY >= terrainHeight - 4) {
+                        } else if (y >= terrainHeight - 4) {
                             color.r = 0.6f;
                             color.g = 0.4f;
                             color.b = 0.2f;
                         } else {
-                            float depth = 1.0f - ((float) (worldY) / terrainHeight) * 0.5f;
+                            float depth = 1.0f - ((float) (y) / terrainHeight) * 0.5f;
                             color.r = 0.5f * depth;
                             color.g = 0.5f * depth;
                             color.b = 0.5f * depth;
                         }
                         double caveNoise = simplexNoise.noise(
                                 worldX * 3,
-                                worldY * 0.1f,
+                                y * 0.1f,
                                 worldZ * 3);
 
                         if (caveNoise > 0.75) {
-                            chunk.data[x][y][z] = null;
+                            data[x][y][z] = null;
                         } else {
-                            chunk.data[x][y][z] = color;
+                            data[x][y][z] = color;
                         }
-                    } else {
-                        chunk.data[x][y][z] = null;
                     }
                 }
             }
         }
-
-        return chunk;
+        return data;
     }
 
     private class SimplexNoise {

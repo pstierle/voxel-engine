@@ -6,4 +6,6 @@ public interface BaseExample {
     void update();
 
     void render();
+
+    void destroy();
 }

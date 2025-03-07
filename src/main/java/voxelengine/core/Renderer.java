@@ -3,13 +3,22 @@ package voxelengine.core;
 import org.joml.Matrix4d;
 import org.joml.Vector3d;
 import org.lwjgl.BufferUtils;
-
 import voxelengine.window.Window;
 
-import static org.lwjgl.glfw.GLFW.glfwGetTime;
-import static org.lwjgl.opengl.GL46.*;
-
 import java.nio.FloatBuffer;
+
+import static org.lwjgl.glfw.GLFW.glfwGetTime;
+import static org.lwjgl.opengl.GL46.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL46.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL46.GL_FILL;
+import static org.lwjgl.opengl.GL46.GL_FRONT_AND_BACK;
+import static org.lwjgl.opengl.GL46.GL_LINE;
+import static org.lwjgl.opengl.GL46.glClear;
+import static org.lwjgl.opengl.GL46.glClearColor;
+import static org.lwjgl.opengl.GL46.glCreateProgram;
+import static org.lwjgl.opengl.GL46.glPolygonMode;
+import static org.lwjgl.opengl.GL46.glUniform3fv;
+import static org.lwjgl.opengl.GL46.glUniformMatrix4fv;
 
 public class Renderer {
     public boolean wireframeEnabled = false;
@@ -17,9 +26,6 @@ public class Renderer {
     public double lastFrameTime;
     public double fpsTimer = 0;
     public int programId;
-    public int vboId;
-    public int vaoId;
-    public int eboId;
     public int frameCount;
     public int viewLocation;
     public int projectionLocation;
@@ -28,7 +34,6 @@ public class Renderer {
     public Camera camera;
     public Window window;
     public Vector3d lightPosition;
-    public int numVoxels;
 
     public void init() {
         this.lastFrameTime = glfwGetTime();
