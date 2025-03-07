@@ -19,9 +19,9 @@ public final class Constants {
     public static final boolean LOAD_WORLD_NBT = false;
     public static final int FLOAT_PER_VERTEX = 9;
     public static final int NBT_CHUNK_SIZE = 48;
-    public static final int NOISE_CHUNK_SIZE = 32;
+    public static final int NOISE_CHUNK_SIZE = 16;
     public static final int NOISE_CHUNK_MAX_Y = 64;
-    public static final int NOISE_CHUNK_RADIUS = 8;
+    public static final int NOISE_CHUNK_RADIUS = 10;
     public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 2;
     public static final int WORLD_SEED = 1337;
     public static final int CAMERA_FOV = 90;
