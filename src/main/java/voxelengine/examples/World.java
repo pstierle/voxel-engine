@@ -139,7 +139,7 @@ public class World implements BaseExample {
     public void render() {
         int uploadedCount = 0;
         for (Chunk chunk : this.chunks) {
-            if (chunk.needsBufferUpdate && uploadedCount <= 2) {
+            if (chunk.needsBufferUpdate && uploadedCount < Constants.NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME) {
                 chunk.uploadBuffers(this.renderer.programId);
                 chunk.render();
                 uploadedCount++;
