@@ -137,12 +137,12 @@ public class World implements BaseExample {
 
     @Override
     public void render() {
-        boolean uploadedOnce = false;
+        int uploadedCount = 0;
         for (Chunk chunk : this.chunks) {
-            if (chunk.needsBufferUpdate && !uploadedOnce) {
+            if (chunk.needsBufferUpdate && uploadedCount <= 2) {
                 chunk.uploadBuffers(this.renderer.programId);
                 chunk.render();
-                uploadedOnce = true;
+                uploadedCount++;
             } else {
                 chunk.render();
             }

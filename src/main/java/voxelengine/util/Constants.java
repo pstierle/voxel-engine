@@ -4,7 +4,7 @@ import voxelengine.examples.ExampleType;
 
 public class Constants {
     public static double MOUSE_SENSITIVITY = 0.2;
-    public static double CAMERA_SPEED = 200.0;
+    public static double CAMERA_SPEED = 100.0;
     public static ExampleType EXAMPLE = ExampleType.WORLD;
     public static String NBT_FOLDER_PATH = "world/colluseum";
     public static int VOXEL_FACES_COUNT = 6;
@@ -16,8 +16,8 @@ public class Constants {
     public static boolean LOAD_WORLD_NBT = false;
     public static int FLOAT_PER_VERTEX = 9;
     public static int NBT_CHUNK_SIZE = 48;
-    public static int NOISE_CHUNK_SIZE = 16;
+    public static int NOISE_CHUNK_SIZE = 32;
     public static int NOISE_CHUNK_MAX_Y = 32;
-    public static int NOISE_CHUNK_RADIUS = 10;
+    public static int NOISE_CHUNK_RADIUS = 2;
     public static int WORLD_SEED = 1337;
 }
