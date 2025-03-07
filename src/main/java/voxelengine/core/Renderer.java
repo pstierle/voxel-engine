@@ -89,7 +89,7 @@ public class Renderer {
         double lastFpsTime = currentFrameTime - this.fpsTimer;
 
         if (lastFpsTime >= 1) {
-            Log.info(String.format("FPS: %.2f", lastFpsTime));
+            Log.info("FPS: " + this.frameCount);
             this.fpsTimer = currentFrameTime;
             this.frameCount = 0;
         }
@@ -115,7 +115,7 @@ public class Renderer {
 
         view.lookAt(this.camera.getPosition(), center, this.camera.getUp());
 
-        double aspectRatio = (double) this.window.width / this.window.height;
+        double aspectRatio = (double) this.window.getWidth() / this.window.getHeight();
         projection.perspective(Math.toRadians(Constants.CAMERA_FOV), aspectRatio, 0.1, 1000);
 
         FloatBuffer viewDest = BufferUtils.createFloatBuffer(16);

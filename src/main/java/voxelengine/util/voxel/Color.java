@@ -1,7 +1,9 @@
 package voxelengine.util.voxel;
 
 public class Color {
-    private float r, g, b;
+    private final float r;
+    private final float b;
+    private final float g;
 
     public Color(float r, float g, float b) {
         this.r = r;

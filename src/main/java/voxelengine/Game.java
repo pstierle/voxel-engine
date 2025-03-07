@@ -28,10 +28,7 @@ public class Game {
         this.renderer = new Renderer();
         this.window = new Window();
 
-
-        this.window.renderer = this.renderer;
-        this.window.camera = this.camera;
-
+        this.window.init(camera, renderer);
         this.camera.init(renderer, window);
         this.window.init();
         this.renderer.init(camera, window);
@@ -55,7 +52,7 @@ public class Game {
     }
 
     public void loop() {
-        while (!glfwWindowShouldClose(this.window.handle)) {
+        while (!glfwWindowShouldClose(this.window.getHandle())) {
             this.window.input();
 
             this.camera.update();
@@ -66,7 +63,7 @@ public class Game {
 
             this.example.render();
 
-            glfwSwapBuffers(this.window.handle);
+            glfwSwapBuffers(this.window.getHandle());
             glfwPollEvents();
         }
     }

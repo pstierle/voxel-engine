@@ -10,7 +10,7 @@ public class Log {
     private static final Logger logger = Logger.getLogger(Log.class.getName());
 
     public static void info(String message) {
-        logger.info(message);
+        logger.log(Level.INFO, message);
     }
 
     public static void error(String message) {

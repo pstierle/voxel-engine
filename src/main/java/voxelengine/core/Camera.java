@@ -39,26 +39,26 @@ public class Camera {
     public void update() {
         double deltaTime = this.renderer.getDeltaTime();
 
-        if (this.window.keyboard.wPressed) {
+        if (this.window.getKeyboard().isWPressed()) {
             Vector3d intermediate = new Vector3d();
             this.front.mul(Constants.CAMERA_SPEED * deltaTime, intermediate);
             this.position.add(intermediate);
         }
 
-        if (this.window.keyboard.sPressed) {
+        if (this.window.getKeyboard().isSPressed()) {
             Vector3d intermediate = new Vector3d();
             this.front.mul(Constants.CAMERA_SPEED * deltaTime, intermediate);
             this.position.sub(intermediate);
         }
 
-        if (this.window.keyboard.dPressed) {
+        if (this.window.getKeyboard().isDPressed()) {
             Vector3d right = new Vector3d();
             this.front.cross(this.up, right).normalize();
             right.mul(Constants.CAMERA_SPEED * deltaTime, right);
             this.position.add(right);
         }
 
-        if (this.window.keyboard.aPressed) {
+        if (this.window.getKeyboard().isAPressed()) {
             Vector3d left = new Vector3d();
             this.front.cross(this.up, left).normalize();
             left.mul(Constants.CAMERA_SPEED * deltaTime, left);

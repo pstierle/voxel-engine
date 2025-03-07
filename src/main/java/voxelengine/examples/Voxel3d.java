@@ -64,10 +64,10 @@ public class Voxel3d implements BaseExample {
         glVertexAttribPointer(0, 3, GL_FLOAT, false, 9 * Float.BYTES, 0);
         glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 9 * Float.BYTES, 3 * Float.BYTES);
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 9 * Float.BYTES, (long) 3 * Float.BYTES);
         glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(2, 3, GL_FLOAT, false, 9 * Float.BYTES, 6 * Float.BYTES);
+        glVertexAttribPointer(2, 3, GL_FLOAT, false, 9 * Float.BYTES, (long) 6 * Float.BYTES);
         glEnableVertexAttribArray(2);
     }
 

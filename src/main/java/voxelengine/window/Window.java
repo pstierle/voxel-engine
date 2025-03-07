@@ -1,6 +1,5 @@
 package voxelengine.window;
 
-import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
@@ -31,7 +30,6 @@ import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
@@ -45,17 +43,36 @@ import static org.lwjgl.opengl.GL46.glViewport;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
-    public long handle;
-    public int width = 1600;
-    public int height = 900;
-    public Mouse mouse = new Mouse(this.width / 2, this.height / 2);
-    public Keyboard keyboard = new Keyboard();
-    public Camera camera;
-    public Renderer renderer;
+    private long handle;
+    private int width = 1600;
+    private int height = 900;
+    private final Mouse mouse = new Mouse((double) this.width / 2, (double) this.height / 2);
+    private final Keyboard keyboard = new Keyboard();
+    private Camera camera;
+    private Renderer renderer;
+
+    public Keyboard getKeyboard() {
+        return keyboard;
+    }
+
+    public long getHandle() {
+        return handle;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void init(Camera camera, Renderer renderer) {
+        this.camera = camera;
+        this.renderer = renderer;
+    }
 
     public void init() {
-        GLFWErrorCallback.createPrint(System.err).set();
-
         if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
         }
@@ -67,7 +84,7 @@ public class Window {
         this.handle = glfwCreateWindow(this.width, this.height, "Voxel Engine", NULL, NULL);
 
         if (this.handle == NULL) {
-            throw new RuntimeException("Failed to create the GLFW window");
+            throw new IllegalStateException("Unable to create the GLFW window");
         }
 
         glfwMakeContextCurrent(this.handle);
@@ -76,16 +93,13 @@ public class Window {
         glfwSetInputMode(this.handle, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 
         glfwSetCursorPosCallback(this.handle, (long window, double xpos, double ypos) -> {
-            if (this.mouse.firstMouseMoveHandled == false) {
-                this.mouse.position.x = xpos;
-                this.mouse.position.y = ypos;
-                this.mouse.firstMouseMoveHandled = true;
+            if (!this.mouse.isFirstMouseMoveHandled()) {
+                this.mouse.setPosition(xpos, ypos);
+                this.mouse.setFirstMouseMoveHandled(true);
             }
 
-            this.camera.handleMouseMove(this.mouse.position.x, xpos, this.mouse.position.y, ypos);
-
-            this.mouse.position.x = xpos;
-            this.mouse.position.y = ypos;
+            this.camera.handleMouseMove(this.mouse.getPosition().x, xpos, this.mouse.getPosition().y, ypos);
+            this.mouse.setPosition(xpos, ypos);
         });
 
         glfwSetKeyCallback(this.handle, (window, key, scancode, action, mods) -> {
@@ -111,29 +125,29 @@ public class Window {
         glfwPollEvents();
 
         if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_PRESS) {
-            this.keyboard.wPressed = true;
+            this.keyboard.setWPressed(true);
         }
         if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_PRESS) {
-            this.keyboard.sPressed = true;
+            this.keyboard.setSPressed(true);
         }
         if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_PRESS) {
-            this.keyboard.aPressed = true;
+            this.keyboard.setAPressed(true);
         }
         if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_PRESS) {
-            this.keyboard.dPressed = true;
+            this.keyboard.setDPressed(true);
         }
 
         if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_RELEASE) {
-            this.keyboard.wPressed = false;
+            this.keyboard.setWPressed(false);
         }
         if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_RELEASE) {
-            this.keyboard.sPressed = false;
+            this.keyboard.setSPressed(false);
         }
         if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_RELEASE) {
-            this.keyboard.aPressed = false;
+            this.keyboard.setAPressed(false);
         }
         if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_RELEASE) {
-            this.keyboard.dPressed = false;
+            this.keyboard.setDPressed(false);
         }
     }
 
@@ -141,6 +155,5 @@ public class Window {
         glfwFreeCallbacks(this.handle);
         glfwDestroyWindow(this.handle);
         glfwTerminate();
-        glfwSetErrorCallback(null).free();
     }
 }
