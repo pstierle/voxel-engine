@@ -3,6 +3,7 @@ package voxelengine.core;
 import org.joml.Matrix4d;
 import org.joml.Vector3d;
 import org.lwjgl.BufferUtils;
+
 import voxelengine.window.Window;
 
 import java.nio.FloatBuffer;
@@ -19,6 +20,12 @@ import static org.lwjgl.opengl.GL46.glCreateProgram;
 import static org.lwjgl.opengl.GL46.glPolygonMode;
 import static org.lwjgl.opengl.GL46.glUniform3fv;
 import static org.lwjgl.opengl.GL46.glUniformMatrix4fv;
+import static org.lwjgl.opengl.GL46.glGetUniformLocation;
+import static org.lwjgl.opengl.GL46.GL_VERTEX_SHADER;
+import static org.lwjgl.opengl.GL46.GL_FRAGMENT_SHADER;
+
+import voxelengine.examples.ExampleType;
+import voxelengine.util.Constants;
 
 public class Renderer {
     public boolean wireframeEnabled = false;
@@ -39,6 +46,18 @@ public class Renderer {
         this.lastFrameTime = glfwGetTime();
         this.programId = glCreateProgram();
         this.lightPosition = new Vector3d(0, 200, 0);
+
+        if (Constants.EXAMPLE == ExampleType.TRIANGLE_2D || Constants.EXAMPLE == ExampleType.VOXEL_2D) {
+            Shader.loadShader(this.programId, "shaders/basic.fs", GL_FRAGMENT_SHADER);
+            Shader.loadShader(this.programId, "shaders/basic.vs", GL_VERTEX_SHADER);
+        } else {
+            Shader.loadShader(this.programId, "shaders/world.fs", GL_FRAGMENT_SHADER);
+            Shader.loadShader(this.programId, "shaders/world.vs", GL_VERTEX_SHADER);
+            this.viewLocation = glGetUniformLocation(this.programId, "view");
+            this.projectionLocation = glGetUniformLocation(this.programId, "projection");
+            this.lightPositionLocation = glGetUniformLocation(this.programId, "light_position");
+            this.cameraPositionLocation = glGetUniformLocation(this.programId, "camera_position");
+        }
     }
 
     public void udpate() {

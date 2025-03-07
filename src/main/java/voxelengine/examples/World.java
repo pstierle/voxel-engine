@@ -3,7 +3,6 @@ package voxelengine.examples;
 import org.joml.Vector2d;
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
-import voxelengine.core.Shader;
 import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
 import voxelengine.util.NbtUtil;
@@ -14,10 +13,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.lwjgl.opengl.GL46.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL46.GL_VERTEX_SHADER;
-import static org.lwjgl.opengl.GL46.glGetUniformLocation;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class World implements BaseExample {
     public Renderer renderer;
@@ -25,24 +25,23 @@ public class World implements BaseExample {
     public NoiseUtil noiseUtil;
     public List<Chunk> chunks;
     public Camera camera;
-    private long lastUpdateTime = 0;
+    private AtomicLong lastUpdateTime = new AtomicLong(0);
     private static final long UPDATE_INTERVAL = 200_000_000;
+    private ExecutorService threadPool;
+    private ReentrantLock chunksLock = new ReentrantLock();
+    private boolean isUpdating = false;
 
     @Override
     public void init() {
-        Shader.loadShader(this.renderer.programId, "shaders/world.fs", GL_FRAGMENT_SHADER);
-        Shader.loadShader(this.renderer.programId, "shaders/world.vs", GL_VERTEX_SHADER);
+        // Create a thread pool for chunk updates
+        int processorCount = Runtime.getRuntime().availableProcessors();
+        threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
 
         if (Constants.LOAD_WORLD_NBT) {
             this.chunks = this.nbtUtil.loadWorld();
         } else {
-            this.chunks = this.noiseUtil.loadWorld();
+            this.chunks = new CopyOnWriteArrayList<>(this.noiseUtil.loadWorld());
         }
-
-        this.renderer.viewLocation = glGetUniformLocation(this.renderer.programId, "view");
-        this.renderer.projectionLocation = glGetUniformLocation(this.renderer.programId, "projection");
-        this.renderer.lightPositionLocation = glGetUniformLocation(this.renderer.programId, "light_position");
-        this.renderer.cameraPositionLocation = glGetUniformLocation(this.renderer.programId, "camera_position");
     }
 
     @Override
@@ -52,10 +51,23 @@ public class World implements BaseExample {
         }
 
         long currentTime = System.nanoTime();
-        if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
+        if (currentTime - lastUpdateTime.get() < UPDATE_INTERVAL || isUpdating) {
             return;
         }
 
+        isUpdating = true;
+        lastUpdateTime.set(currentTime);
+
+        threadPool.submit(() -> {
+            try {
+                updateChunks();
+            } finally {
+                isUpdating = false;
+            }
+        });
+    }
+
+    private void updateChunks() {
         int playerX = (int) this.camera.position.x;
         int playerZ = (int) this.camera.position.z;
         int playerChunkX = Math.floorDiv(playerX, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
@@ -71,17 +83,26 @@ public class World implements BaseExample {
         }
 
         List<Chunk> chunksToUpdate = new ArrayList<>();
-        for (Chunk chunk : this.chunks) {
-            Vector2d pos = new Vector2d(chunk.xOffset, chunk.zOffset);
-            if (!visibleChunkPositions.contains(pos)) {
-                chunksToUpdate.add(chunk);
+        List<Chunk> visibleChunks = new ArrayList<>();
+
+        chunksLock.lock();
+        try {
+            for (Chunk chunk : this.chunks) {
+                Vector2d pos = new Vector2d(chunk.xOffset, chunk.zOffset);
+                if (!visibleChunkPositions.contains(pos)) {
+                    chunksToUpdate.add(chunk);
+                } else {
+                    visibleChunks.add(chunk);
+                }
             }
+        } finally {
+            chunksLock.unlock();
         }
 
         List<Vector2d> positionsToAdd = new ArrayList<>();
         for (Vector2d pos : visibleChunkPositions) {
             boolean chunkExists = false;
-            for (Chunk chunk : this.chunks) {
+            for (Chunk chunk : visibleChunks) {
                 if (chunk.xOffset == (int) pos.x && chunk.zOffset == (int) pos.y) {
                     chunkExists = true;
                     break;
@@ -93,30 +114,45 @@ public class World implements BaseExample {
             }
         }
 
+        positionsToAdd.sort((a, b) -> {
+            double distA = Math.sqrt(Math.pow(a.x - playerChunkX, 2) + Math.pow(a.y - playerChunkZ, 2));
+            double distB = Math.sqrt(Math.pow(b.x - playerChunkX, 2) + Math.pow(b.y - playerChunkZ, 2));
+            return Double.compare(distA, distB);
+        });
+
         int updateCount = Math.min(positionsToAdd.size(), chunksToUpdate.size());
         for (int i = 0; i < updateCount; i++) {
-            Chunk chunk = chunksToUpdate.get(i);
-            Vector2d position = positionsToAdd.get(i);
+            final int index = i;
+            Chunk chunk = chunksToUpdate.get(index);
+            Vector2d position = positionsToAdd.get(index);
 
             chunk.xOffset = (int) position.x;
             chunk.zOffset = (int) position.y;
 
             Color[][][] chunkData = this.noiseUtil.generateChunkData(chunk.xOffset, chunk.zOffset);
             chunk.loadData(chunkData);
-            chunk.uploadBuffers(this.renderer.programId);
+            chunk.needsBufferUpdate = true;
         }
-
-        lastUpdateTime = currentTime;
     }
 
     @Override
     public void render() {
+        boolean uploadedOnce = false;
         for (Chunk chunk : this.chunks) {
-            chunk.render();
+            if (chunk.needsBufferUpdate && !uploadedOnce) {
+                chunk.uploadBuffers(this.renderer.programId);
+                chunk.render();
+                uploadedOnce = true;
+            } else {
+                chunk.render();
+            }
         }
     }
 
     @Override
     public void destroy() {
+        if (threadPool != null) {
+            threadPool.shutdown();
+        }
     }
 }

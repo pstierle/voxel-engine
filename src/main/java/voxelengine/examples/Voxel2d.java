@@ -29,9 +29,6 @@ public class Voxel2d implements BaseExample {
 
     @Override
     public void init() {
-        Shader.loadShader(this.renderer.programId, "shaders/basic.fs", GL_FRAGMENT_SHADER);
-        Shader.loadShader(this.renderer.programId, "shaders/basic.vs", GL_VERTEX_SHADER);
-
         float vertices[] = {
                 // Front face (Positive Z-axis)
                 -0.5f, -0.5f, 0.5f, // Bottom left

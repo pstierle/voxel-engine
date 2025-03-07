@@ -29,9 +29,6 @@ public class Triangle2d implements BaseExample {
 
     @Override
     public void init() {
-        Shader.loadShader(this.renderer.programId, "shaders/basic.fs", GL_FRAGMENT_SHADER);
-        Shader.loadShader(this.renderer.programId, "shaders/basic.vs", GL_VERTEX_SHADER);
-
         float vertices[] = {
                 // Triangle
                 -0.5f, -0.5f, 0.0f, // Bottom left

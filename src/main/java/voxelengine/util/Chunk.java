@@ -10,21 +10,21 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
+import static org.lwjgl.opengl.GL11.glDrawArrays;
+import static org.lwjgl.opengl.GL11.glDrawElements;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL15.glBindBuffer;
 import static org.lwjgl.opengl.GL15.glBufferData;
+import static org.lwjgl.opengl.GL15.glGenBuffers;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glUseProgram;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
-import static org.lwjgl.opengl.GL46.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL46.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL46.GL_UNSIGNED_INT;
-import static org.lwjgl.opengl.GL46.glBindBuffer;
-import static org.lwjgl.opengl.GL46.glBindVertexArray;
-import static org.lwjgl.opengl.GL46.glDrawArrays;
-import static org.lwjgl.opengl.GL46.glDrawElements;
-import static org.lwjgl.opengl.GL46.glGenBuffers;
-import static org.lwjgl.opengl.GL46.glGenVertexArrays;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Chunk {
     private static int nextId = 0;
@@ -43,6 +43,7 @@ public class Chunk {
     public Color[][][] data;
     public float[] vertices;
     public int[] indices;
+    public boolean needsBufferUpdate = false;
 
     public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ, int xSize, int ySize, int zSize) {
         this.id = nextId++;
@@ -157,8 +158,8 @@ public class Chunk {
         this.data = null;
         vertices = null;
         indices = null;
+        this.needsBufferUpdate = false;
     }
-
 
     public void render() {
         glBindVertexArray(this.vaoId);
