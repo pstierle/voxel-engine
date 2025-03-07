@@ -16,7 +16,7 @@ import voxelengine.util.Constants;
 import voxelengine.util.NbtUtil;
 import voxelengine.util.NoiseUtil;
 
-public class Main {
+public class Game {
     private Camera camera;
     private Renderer renderer;
     private Window window;
@@ -24,7 +24,7 @@ public class Main {
     private NbtUtil nbtUtil;
     private NoiseUtil noiseUtil;
 
-    public void run() {
+    public void init() {
         this.camera = new Camera();
         this.renderer = new Renderer();
         this.window = new Window();
@@ -72,7 +72,9 @@ public class Main {
         }
 
         this.example.init();
+    }
 
+    public void loop() {
         while (!glfwWindowShouldClose(this.window.handle)) {
             this.window.input();
 
@@ -87,11 +89,17 @@ public class Main {
             glfwSwapBuffers(this.window.handle);
             glfwPollEvents();
         }
+    }
 
+    public void destroy() {
         this.window.destroy();
+
     }
 
     public static void main(String[] args) {
-        new Main().run();
+        Game game = new Game();
+        game.init();
+        game.loop();
+        game.destroy();
     }
 }

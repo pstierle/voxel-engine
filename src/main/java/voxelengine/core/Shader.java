@@ -26,7 +26,7 @@ public class Shader {
             }
 
             try (
-                    Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8).useDelimiter("\\A")) {
+                    Scanner scanner = new Scanner(inputStream, "UTF-8").useDelimiter("\\A")) {
                 return scanner.hasNext() ? scanner.next() : "";
             }
         } catch (IOException e) {
