@@ -9,22 +9,22 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-import static org.lwjgl.opengl.GL46.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL15.glBufferData;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glUseProgram;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL46.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL46.GL_FLOAT;
-import static org.lwjgl.opengl.GL46.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL46.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL46.GL_UNSIGNED_INT;
 import static org.lwjgl.opengl.GL46.glBindBuffer;
 import static org.lwjgl.opengl.GL46.glBindVertexArray;
-import static org.lwjgl.opengl.GL46.glBufferData;
 import static org.lwjgl.opengl.GL46.glDrawArrays;
 import static org.lwjgl.opengl.GL46.glDrawElements;
-import static org.lwjgl.opengl.GL46.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL46.glGenBuffers;
 import static org.lwjgl.opengl.GL46.glGenVertexArrays;
-import static org.lwjgl.opengl.GL46.glUseProgram;
-import static org.lwjgl.opengl.GL46.glVertexAttribPointer;
 
 public class Chunk {
     private static int nextId = 0;
@@ -41,6 +41,8 @@ public class Chunk {
     public int numVoxels;
     public int indicesCount;
     public Color[][][] data;
+    public float[] vertices;
+    public int[] indices;
 
     public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ, int xSize, int ySize, int zSize) {
         this.id = nextId++;
@@ -57,14 +59,13 @@ public class Chunk {
         }
     }
 
-    public void load(int programId, Color[][][] data) {
+    public void loadData(Color[][][] data) {
         this.data = data;
         this.numVoxels = this.calculateVoxelCount();
-        float[] vertices = new float[this.countVertices()];
+        this.vertices = new float[this.countVertices()];
         int verticesIndex = 0;
-        int[] indices = new int[0];
         if (Constants.INSTANCE_RENDERING) {
-            indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
+            this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
                     * Constants.VOXEL_FACE_INDICES_COUNT];
         }
         int indicesIndex = 0;
@@ -83,28 +84,43 @@ public class Chunk {
                         }
                         int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.FLOAT_PER_VERTEX;
                         for (VoxelFaceVertex vertex : face.vertices) {
-                            vertices[verticesIndex++] = (float) vertex.position.x + this.xOffset + x;
-                            vertices[verticesIndex++] = (float) vertex.position.y + this.yOffset + y;
-                            vertices[verticesIndex++] = (float) vertex.position.z + this.zOffset + z;
+                            this.vertices[verticesIndex++] = (float) vertex.position.x + this.xOffset + x;
+                            this.vertices[verticesIndex++] = (float) vertex.position.y + this.yOffset + y;
+                            this.vertices[verticesIndex++] = (float) vertex.position.z + this.zOffset + z;
 
-                            vertices[verticesIndex++] = color.r;
-                            vertices[verticesIndex++] = color.g;
-                            vertices[verticesIndex++] = color.b;
+                            this.vertices[verticesIndex++] = color.r;
+                            this.vertices[verticesIndex++] = color.g;
+                            this.vertices[verticesIndex++] = color.b;
 
-                            vertices[verticesIndex++] = (float) vertex.normal.x;
-                            vertices[verticesIndex++] = (float) vertex.normal.y;
-                            vertices[verticesIndex++] = (float) vertex.normal.z;
+                            this.vertices[verticesIndex++] = (float) vertex.normal.x;
+                            this.vertices[verticesIndex++] = (float) vertex.normal.y;
+                            this.vertices[verticesIndex++] = (float) vertex.normal.z;
                         }
                         if (Constants.INSTANCE_RENDERING) {
                             int baseOffset = voxelVerticesStart / Constants.FLOAT_PER_VERTEX;
                             for (Integer index : face.indices) {
                                 int localIndex = index
                                         % face.vertices.size();
-                                indices[indicesIndex++] = baseOffset + faceVerticesOffset + localIndex;
+                                this.indices[indicesIndex++] = baseOffset + faceVerticesOffset + localIndex;
                             }
                         }
                     }
                 }
+            }
+        }
+
+        if (Constants.INSTANCE_RENDERING) {
+            this.indicesCount = indicesIndex;
+        }
+    }
+
+    public void uploadBuffers(int programId) {
+        if (this.vertices == null) {
+            return;
+        }
+        if (Constants.INSTANCE_RENDERING) {
+            if (this.indices == null) {
+                return;
             }
         }
 
@@ -113,10 +129,10 @@ public class Chunk {
         glBindVertexArray(this.vaoId);
         glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
 
-        FloatBuffer verticesBuffer = ByteBuffer.allocateDirect(vertices.length * Float.BYTES)
+        FloatBuffer verticesBuffer = ByteBuffer.allocateDirect(this.vertices.length * Float.BYTES)
                 .order(java.nio.ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        verticesBuffer.put(vertices).flip();
+        verticesBuffer.put(this.vertices).flip();
 
         glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
 
@@ -131,18 +147,18 @@ public class Chunk {
 
         if (Constants.INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
-            IntBuffer indicesBuffer = ByteBuffer.allocateDirect(indices.length * Integer.BYTES)
+            IntBuffer indicesBuffer = ByteBuffer.allocateDirect(this.indices.length * Integer.BYTES)
                     .order(java.nio.ByteOrder.nativeOrder())
                     .asIntBuffer();
-            indicesBuffer.put(indices).flip();
+            indicesBuffer.put(this.indices).flip();
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
-            this.indicesCount = indicesIndex;
         }
-        System.out.println(String.format("Loaded %d voxels", this.numVoxels));
+
         this.data = null;
         vertices = null;
         indices = null;
     }
+
 
     public void render() {
         glBindVertexArray(this.vaoId);

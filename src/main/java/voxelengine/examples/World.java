@@ -102,7 +102,8 @@ public class World implements BaseExample {
             chunk.zOffset = (int) position.y;
 
             Color[][][] chunkData = this.noiseUtil.generateChunkData(chunk.xOffset, chunk.zOffset);
-            chunk.load(this.renderer.programId, chunkData);
+            chunk.loadData(chunkData);
+            chunk.uploadBuffers(this.renderer.programId);
         }
 
         lastUpdateTime = currentTime;

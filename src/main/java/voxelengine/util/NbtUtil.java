@@ -85,7 +85,8 @@ public class NbtUtil {
                     }
                     if (voxelCount > 0) {
                         chunk.numVoxels = voxelCount;
-                        chunk.load(this.renderer.programId, chunk.data);
+                        chunk.loadData(chunk.data);
+                        chunk.uploadBuffers(this.renderer.programId);
                         chunks.add(chunk);
                     }
                 }

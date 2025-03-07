@@ -30,7 +30,8 @@ public class NoiseUtil {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
                 Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
                 Color[][][] chunkData = generateChunkData(chunk.xOffset, chunk.zOffset);
-                chunk.load(this.renderer.programId, chunkData);
+                chunk.loadData(chunkData);
+                chunk.uploadBuffers(this.renderer.programId);
                 chunks.add(chunk);
             }
         }
