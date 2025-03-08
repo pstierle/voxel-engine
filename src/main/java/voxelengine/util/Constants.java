@@ -9,7 +9,7 @@ public final class Constants {
     public static final double MOUSE_SENSITIVITY = 0.2;
     public static final double CAMERA_SPEED = 100.0;
     public static final ExampleType EXAMPLE = ExampleType.WORLD;
-    public static final String NBT_FOLDER_PATH = "world/colluseum";
+    public static final String NBT_FOLDER_PATH = "world/italy";
     public static final int VOXEL_FACES_COUNT = 6;
     public static final int VOXEL_FACE_VERTICES_COUNT = 6;
     public static final int VOXEL_FACE_VERTICES_COUNT_INSTANCED = 4;

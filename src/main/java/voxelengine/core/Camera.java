@@ -5,7 +5,7 @@ import voxelengine.util.Constants;
 import voxelengine.window.Window;
 
 public class Camera {
-    private final Vector3d position = new Vector3d(160, 200, 433);
+    private final Vector3d position = new Vector3d(0, 200, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
 
