@@ -2,7 +2,6 @@ package voxelengine.util;
 
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
-import voxelengine.util.voxel.Color;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +10,6 @@ public class NoiseUtil {
     private final FastNoiseLite baseNoise;
     private final FastNoiseLite detailNoise;
     private final FastNoiseLite largeFeatureNoise;
-    private final FastNoiseLite caveNoise;
     private final Renderer renderer;
     private final Camera camera;
 
@@ -28,53 +26,62 @@ public class NoiseUtil {
         this.largeFeatureNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         this.largeFeatureNoise.SetFrequency(0.005f);
 
-        this.caveNoise = new FastNoiseLite(Constants.WORLD_SEED);
-        this.caveNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        this.caveNoise.SetFrequency(0.03f);
-
         this.renderer = renderer;
         this.camera = camera;
     }
 
-    public Color[][][] generateChunkData(int chunkOffsetX, int chunkOffsetZ) {
-        Color[][][] data = new Color[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_MAX_Y][Constants.NOISE_CHUNK_SIZE];
+    public float[][] generateHeightMap(int chunkOffsetX, int chunkOffsetZ) {
+        float[][] heightMap = new float[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE];
+
+        float mountainScale = Constants.NOISE_CHUNK_MAX_Y * 0.9f;
+        float valleyScale = Constants.NOISE_CHUNK_MAX_Y * 0.1f;
+
+        float baseFrequency = 0.015f;
+        float mountainFrequency = 0.05f;
+        float detailFrequency = 0.1f;
+
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                float worldX = (float) chunkOffsetX + x;
-                float worldZ = (float) chunkOffsetZ + z;
+                float worldX = (chunkOffsetX + x);
+                float worldZ = (chunkOffsetZ + z);
 
-                double baseHeightNoise = (baseNoise.GetNoise(worldX, worldZ) + 1) * 0.5;
-                double detailNoiseValue = (detailNoise.GetNoise(worldX, worldZ) + 1) * 0.25;
-                double largeFeatureNoiseValue = (largeFeatureNoise.GetNoise(worldX, worldZ) + 1) * 0.25;
+                float continentNoise = largeFeatureNoise.GetNoise(worldX * baseFrequency, worldZ * baseFrequency);
+                float exaggeratedNoise = (float) Math.pow(Math.abs(continentNoise), 0.5) * Math.signum(continentNoise);
+                float mountainNoise = baseNoise.GetNoise(worldX * mountainFrequency, worldZ * mountainFrequency) * 0.8f;
+                float detailValue = detailNoise.GetNoise(worldX * detailFrequency, worldZ * detailFrequency) * 0.2f;
+                float microDetail = detailNoise.GetNoise(worldX * detailFrequency * 2, worldZ * detailFrequency * 2) * 0.1f;
+                float combinedNoise = exaggeratedNoise + mountainNoise + detailValue + microDetail;
 
-                double heightNoise = baseHeightNoise + detailNoiseValue + largeFeatureNoiseValue;
-
-                int terrainHeight = (int) (heightNoise * Constants.NOISE_CHUNK_MAX_Y * 0.8f);
-
-                for (int y = 0; y < Constants.NOISE_CHUNK_MAX_Y; y++) {
-                    Color color = null;
-
-                    if (y < terrainHeight) {
-                        if (y >= terrainHeight - 1) {
-                            color = new Color(0.2f, 0.8f, 0.2f);
-                        } else if (y >= terrainHeight - 4) {
-                            color = new Color(0.6f, 0.4f, 0.2f);
-                        } else {
-                            float depth = 1.0f - ((float) (y) / terrainHeight) * 0.5f;
-                            color = new Color(0.5f * depth, 0.5f * depth, 0.5f * depth);
-                        }
-
-                        double caveNoiseValue = caveNoise.GetNoise(worldX * 0.3f, y * 0.1f, worldZ * 0.3f);
-                        if (caveNoiseValue > 0.75 && color.getR() < 0.6f) {
-                            color = null;
-                        }
-                    }
-
-                    data[x][y][z] = color;
+                combinedNoise = (combinedNoise + 1.6f) * 0.31f;
+                combinedNoise = Math.max(0.0f, Math.min(1.0f, combinedNoise)); // Clamp to 0-1
+                float heightValue = (float) Math.pow(combinedNoise, 2.5);
+                float terrainHeight;
+                if (heightValue > 0.5f) {
+                    float mountainFactor = (float) Math.pow((heightValue - 0.5f) * 2, 1.5);
+                    terrainHeight = (mountainScale * mountainFactor) + (Constants.NOISE_CHUNK_MAX_Y * 0.25f);
+                } else {
+                    terrainHeight = valleyScale + heightValue * (Constants.NOISE_CHUNK_MAX_Y * 0.3f);
                 }
+
+                if (heightValue > 0.6f) {
+                    float ridgeNoise = Math.abs(detailNoise.GetNoise(worldX * 0.08f + 100, worldZ * 0.08f + 100));
+                    if (ridgeNoise > 0.5f) {
+                        terrainHeight += (ridgeNoise - 0.5f) * Constants.NOISE_CHUNK_MAX_Y * 0.4f;
+                    }
+                }
+
+                if (heightValue > 0.4f && heightValue < 0.6f) {
+                    float cliffNoise = Math.abs(baseNoise.GetNoise(worldX * 0.03f + 200, worldZ * 0.03f + 200));
+                    if (cliffNoise > 0.7f) {
+                        terrainHeight += (cliffNoise - 0.7f) * Constants.NOISE_CHUNK_MAX_Y * 0.5f;
+                    }
+                }
+
+                terrainHeight = Math.min(terrainHeight, Constants.NOISE_CHUNK_MAX_Y);
+                heightMap[x][z] = terrainHeight;
             }
         }
-        return data;
+        return heightMap;
     }
 
     public List<Chunk> loadWorld() {
@@ -89,8 +96,8 @@ public class NoiseUtil {
         for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
                 Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
-                Color[][][] chunkData = generateChunkData(dx, dz);
-                chunk.loadData(chunkData);
+                float[][] heightMap = generateHeightMap(dx, dz);
+                chunk.loadData(heightMap);
                 chunk.uploadBuffers(this.renderer.getProgramId());
                 chunks.add(chunk);
             }

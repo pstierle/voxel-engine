@@ -7,7 +7,6 @@ import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
 import voxelengine.util.NbtUtil;
 import voxelengine.util.NoiseUtil;
-import voxelengine.util.voxel.Color;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -131,8 +130,8 @@ public class World implements BaseExample {
             chunk.setXOffset((int) position.x);
             chunk.setZOffset((int) position.y);
 
-            Color[][][] chunkData = this.noiseUtil.generateChunkData(chunk.getXOffset(), chunk.getZOffset());
-            chunk.loadData(chunkData);
+            float[][] heightMap = this.noiseUtil.generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
+            chunk.loadData(heightMap);
             chunk.setNeedsBufferUpdate(true);
         }
     }
