@@ -4,7 +4,9 @@ import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 public class NoiseUtil {
     private final FastNoiseLite baseNoise;
@@ -96,12 +98,70 @@ public class NoiseUtil {
         for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
                 Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
-                float[][] heightMap = generateHeightMap(dx, dz);
-                chunk.loadData(heightMap);
-                chunk.uploadBuffers(this.renderer.getProgramId());
+                float[][] heightMap = generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
+                chunk.setHeightMapData(heightMap);
                 chunks.add(chunk);
             }
         }
+
+        for (Chunk chunk : chunks) {
+            updateChunkNeighbourHeightMap(chunks, chunk);
+        }
+
+        for (Chunk chunk : chunks) {
+            chunk.loadDataHeightMap();
+            chunk.loadBuffers(this.renderer.getProgramId());
+        }
+
         return chunks;
+    }
+
+    public void updateChunkNeighbourHeightMap(List<Chunk> chunks, Chunk chunk) {
+        Map<Direction, float[][]> neighborHeightMap = new EnumMap<>(Direction.class);
+
+        // ignore top/bottom for noise
+        neighborHeightMap.put(Direction.FRONT, null);
+        neighborHeightMap.put(Direction.BACK, null);
+        neighborHeightMap.put(Direction.LEFT, null);
+        neighborHeightMap.put(Direction.RIGHT, null);
+
+        for (Chunk neighbourChunk : chunks) {
+            Direction neighborDirection = null;
+            if (neighbourChunk.getZOffset() == chunk.getZOffset() + chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {
+                neighborDirection = Direction.FRONT;
+            } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {
+                neighborDirection = Direction.BACK;
+            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + chunk.getXSize() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                neighborDirection = Direction.RIGHT;
+            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - chunk.getXSize() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                neighborDirection = Direction.LEFT;
+            }
+            if (neighborDirection != null) {
+                neighborHeightMap.put(neighborDirection, neighbourChunk.getHeightMapData());
+            }
+        }
+        // fill neighbours that are not yet generated
+        neighborHeightMap.forEach((direction, heightMap) -> {
+            if (heightMap == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
+                int dx = chunk.getXOffset();
+                int dz = chunk.getZOffset();
+                switch (direction) {
+                    case FRONT:
+                        dz += Constants.NOISE_CHUNK_SIZE;
+                        break;
+                    case BACK:
+                        dz -= Constants.NOISE_CHUNK_SIZE;
+                        break;
+                    case LEFT:
+                        dx -= Constants.NOISE_CHUNK_SIZE;
+                        break;
+                    case RIGHT:
+                        dx += Constants.NOISE_CHUNK_SIZE;
+                        break;
+                }
+                neighborHeightMap.put(direction, generateHeightMap(dx, dz));
+            }
+        });
+        chunk.setNeighborHeightMap(neighborHeightMap);
     }
 }

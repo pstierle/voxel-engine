@@ -89,12 +89,12 @@ public class World implements BaseExample {
 
         chunksLock.lock();
         try {
-            for (Chunk chunk : this.chunks) {
-                Vector2d pos = new Vector2d(chunk.getXOffset(), chunk.getZOffset());
+            for (int i = 0; i < this.chunks.size(); i++) {
+                Vector2d pos = new Vector2d(chunks.get(i).getXOffset(), chunks.get(i).getZOffset());
                 if (!visibleChunkPositions.contains(pos)) {
-                    chunksToUpdate.add(chunk);
+                    chunksToUpdate.add(chunks.get(i));
                 } else {
-                    visibleChunks.add(chunk);
+                    visibleChunks.add(chunks.get(i));
                 }
             }
         } finally {
@@ -102,6 +102,7 @@ public class World implements BaseExample {
         }
 
         List<Vector2d> positionsToAdd = new ArrayList<>();
+
         for (Vector2d pos : visibleChunkPositions) {
             boolean chunkExists = false;
             for (Chunk chunk : visibleChunks) {
@@ -131,22 +132,23 @@ public class World implements BaseExample {
             chunk.setZOffset((int) position.y);
 
             float[][] heightMap = this.noiseUtil.generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
-            chunk.loadData(heightMap);
-            chunk.setNeedsBufferUpdate(true);
+
+            chunk.setHeightMapData(heightMap);
+            this.noiseUtil.updateChunkNeighbourHeightMap(chunks, chunk);
+            chunk.loadDataHeightMap();
+            chunk.setNeedsBufferLoad(true);
         }
     }
 
     @Override
     public void render() {
         int uploadedCount = 0;
-        for (Chunk chunk : this.chunks) {
-            if (chunk.isNeedsBufferUpdate() && uploadedCount < Constants.NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME) {
-                chunk.uploadBuffers(this.renderer.getProgramId());
-                chunk.render();
+        for (int i = 0; i < this.chunks.size(); i++) {
+            if (this.chunks.get(i).needsBufferLoad() && uploadedCount < Constants.NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME) {
+                this.chunks.get(i).loadBuffers(this.renderer.getProgramId());
                 uploadedCount++;
-            } else {
-                chunk.render();
             }
+            this.chunks.get(i).render();
         }
     }
 

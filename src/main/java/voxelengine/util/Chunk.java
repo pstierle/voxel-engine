@@ -1,7 +1,6 @@
 package voxelengine.util;
 
 import voxelengine.util.voxel.Color;
-import voxelengine.util.voxel.FaceDirection;
 import voxelengine.util.voxel.Voxel;
 import voxelengine.util.voxel.VoxelFace;
 import voxelengine.util.voxel.VoxelFaceVertex;
@@ -9,6 +8,8 @@ import voxelengine.util.voxel.VoxelFaceVertex;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.EnumMap;
+import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
@@ -41,18 +42,36 @@ public class Chunk {
 
     private int numVoxels;
     private int indicesCount;
-    private Color[][][] data;
     private float[] vertices;
     private int[] indices;
-    private boolean needsBufferUpdate = false;
-
+    private float[][] heightMapData;
+    private Color[][][] nbtData;
+    private boolean needsBufferLoad = false;
+    private Map<Direction, float[][]> neighborHeightMap;
+    private Map<Direction, Color[][][]> neighborNbtData;
 
     public int getXOffset() {
         return xOffset;
     }
 
+    public int getYOffset() {
+        return yOffset;
+    }
+
     public int getZOffset() {
         return zOffset;
+    }
+
+    public int getZSize() {
+        return zSize;
+    }
+
+    public int getXSize() {
+        return xSize;
+    }
+
+    public int getYSize() {
+        return ySize;
     }
 
     public void setXOffset(int xOffset) {
@@ -63,16 +82,36 @@ public class Chunk {
         this.zOffset = zOffset;
     }
 
-    public void setNeedsBufferUpdate(boolean needsBufferUpdate) {
-        this.needsBufferUpdate = needsBufferUpdate;
+    public void setNeedsBufferLoad(boolean needsBufferLoad) {
+        this.needsBufferLoad = needsBufferLoad;
     }
 
-    public boolean isNeedsBufferUpdate() {
-        return needsBufferUpdate;
+    public boolean needsBufferLoad() {
+        return needsBufferLoad;
     }
 
-    public void setNumVoxels(int numVoxels) {
-        this.numVoxels = numVoxels;
+    public Color[][][] getNbtData() {
+        return nbtData;
+    }
+
+    public float[][] getHeightMapData() {
+        return heightMapData;
+    }
+
+    public void setNeighborNbtData(Map<Direction, Color[][][]> neighborNbtData) {
+        this.neighborNbtData = neighborNbtData;
+    }
+
+    public void setNeighborHeightMap(Map<Direction, float[][]> neighborHeightMap) {
+        this.neighborHeightMap = neighborHeightMap;
+    }
+
+    public void setNbtData(Color[][][] nbtData) {
+        this.nbtData = nbtData;
+    }
+
+    public void setHeightMapData(float[][] heightMapData) {
+        this.heightMapData = heightMapData;
     }
 
     public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ, int xSize, int ySize, int zSize) {
@@ -84,133 +123,46 @@ public class Chunk {
         this.zSize = zSize;
         this.vboId = glGenBuffers();
         this.vaoId = glGenVertexArrays();
-        if (Constants.INSTANCE_RENDERING) {
-            this.eboId = glGenBuffers();
-        }
+        this.eboId = glGenBuffers();
+        this.neighborHeightMap = new EnumMap<>(Direction.class);
+        this.neighborNbtData = new EnumMap<>(Direction.class);
+
+
     }
 
-    public void loadData(float[][] heightMap) {
-        int totalVisibleVoxels = 0;
-        int visibilityDepth = 5;
-
-        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
-            for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                int maxHeight = (int) Math.ceil(heightMap[x][z]);
-                int minHeight = Math.max(0, maxHeight - visibilityDepth);
-
-                for (int y = minHeight; y <= maxHeight; y++) {
-                    boolean visible = false;
-
-                    if (y == maxHeight) {
-                        visible = true;
-                    } else if (y == 0) {
-                        visible = true;
-                    } else {
-                        if (z == 0 || y > (int) Math.ceil(heightMap[x][z - 1])) {
-                            visible = true;
-                        } else if (z == Constants.NOISE_CHUNK_SIZE - 1 || y > (int) Math.ceil(heightMap[x][z + 1])) {
-                            visible = true;
-                        } else if (x == Constants.NOISE_CHUNK_SIZE - 1 || y > (int) Math.ceil(heightMap[x + 1][z])) {
-                            visible = true;
-                        } else if (x == 0 || y > (int) Math.ceil(heightMap[x - 1][z])) {
-                            visible = true;
-                        }
-                    }
-
-                    if (visible) {
-                        totalVisibleVoxels++;
-                    }
-                }
-            }
-        }
-
-        this.numVoxels = totalVisibleVoxels;
+    public void loadDataHeightMap() {
+        this.numVoxels = this.calculateVoxelCount(heightMapData);
         this.vertices = new float[this.countVertices()];
-
         if (Constants.INSTANCE_RENDERING) {
             this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
                     * Constants.VOXEL_FACE_INDICES_COUNT];
         }
-
-        int verticesIndex = 0;
-        int indicesIndex = 0;
-
-        float waterLevel = Constants.NOISE_CHUNK_MAX_Y * 0.2f;
         float sandLevel = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
-        float grassLevel = Constants.NOISE_CHUNK_MAX_Y * 0.45f;
         float mountainLevel = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
         float snowLevel = Constants.NOISE_CHUNK_MAX_Y * 0.8f;
-
+        int verticesIndex = 0;
+        int indicesIndex = 0;
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                int maxHeight = (int) Math.ceil(heightMap[x][z]);
-                int minHeight = Math.max(0, maxHeight - visibilityDepth);
-
-                for (int y = minHeight; y <= maxHeight; y++) {
-                    boolean renderTop = (y == maxHeight);
-                    boolean renderBottom = (y == 0);
-                    boolean renderNorth = (z == 0 || y > (int) Math.ceil(heightMap[x][z - 1]));
-                    boolean renderSouth = (z == Constants.NOISE_CHUNK_SIZE - 1 || y > (int) Math.ceil(heightMap[x][z + 1]));
-                    boolean renderEast = (x == Constants.NOISE_CHUNK_SIZE - 1 || y > (int) Math.ceil(heightMap[x + 1][z]));
-                    boolean renderWest = (x == 0 || y > (int) Math.ceil(heightMap[x - 1][z]));
-
-                    if (!renderTop && !renderBottom && !renderNorth &&
-                            !renderSouth && !renderEast && !renderWest) {
-                        continue;
-                    }
-
+                int maxHeight = (int) Math.ceil(heightMapData[x][z]);
+                for (int y = 0; y <= maxHeight; y++) {
                     Color color;
-                    if (y == maxHeight) {
-                        if (y <= waterLevel) {
-                            color = new Color(0.1f, 0.3f, 0.8f);
-                        } else if (y <= sandLevel) {
-                            color = new Color(0.95f, 0.87f, 0.7f);
-                        } else if (y <= grassLevel) {
-                            float greenIntensity = 0.7f - ((y - sandLevel) / grassLevel) * 0.2f;
-                            color = new Color(0.2f, 0.6f + greenIntensity, 0.2f);
-                        } else if (y <= mountainLevel) {
-                            float grassToRock = (y - grassLevel) / (mountainLevel - grassLevel);
-                            color = new Color(
-                                    0.2f + (grassToRock * 0.3f),
-                                    0.6f - (grassToRock * 0.3f),
-                                    0.2f + (grassToRock * 0.2f)
-                            );
-                        } else if (y <= snowLevel) {
-                            color = new Color(0.6f, 0.6f, 0.6f);
-                        } else {
-                            color = new Color(0.95f, 0.95f, 0.95f);
-                        }
+                    if (y <= 0) {
+                        color = new Color(0.1f, 0.3f, 0.8f);
+                    } else if (y <= sandLevel) {
+                        color = new Color(0.95f, 0.87f, 0.7f);
+                    } else if (y <= mountainLevel) {
+                        color = new Color(0.55f, 0.55f, 0.55f);
+                    } else if (y <= snowLevel) {
+                        color = new Color(0.6f, 0.6f, 0.6f);
                     } else {
-                        int depthFromSurface = maxHeight - y;
-                        if (depthFromSurface <= 1) {
-                            color = new Color(0.6f, 0.4f, 0.2f);
-                        } else if (depthFromSurface <= 3) {
-                            float dirtToStone = (depthFromSurface - 1) / 2.0f;
-                            color = new Color(
-                                    0.6f - (dirtToStone * 0.2f),
-                                    0.4f - (dirtToStone * 0.1f),
-                                    0.2f + (dirtToStone * 0.1f)
-                            );
-                        } else {
-                            float depth = Math.min(1.0f, depthFromSurface / 20.0f);
-                            float stoneValue = 0.5f - (depth * 0.3f);
-                            color = new Color(stoneValue, stoneValue, stoneValue);
-                        }
+                        color = new Color(0.95f, 0.95f, 0.95f);
                     }
-
                     int voxelVerticesStart = verticesIndex;
-
                     for (VoxelFace face : this.baseVoxel.getFaces()) {
-                        // Skip rendering faces that aren't visible
-                        if ((face.getDirection().equals(FaceDirection.TOP) && !renderTop) ||
-                                (face.getDirection().equals(FaceDirection.BOTTOM) && !renderBottom) ||
-                                (face.getDirection().equals(FaceDirection.BACK) && !renderNorth) ||
-                                (face.getDirection().equals(FaceDirection.FRONT) && !renderSouth) ||
-                                (face.getDirection().equals(FaceDirection.RIGHT) && !renderEast) ||
-                                (face.getDirection().equals(FaceDirection.LEFT) && !renderWest)) {
+                        if (Constants.FILTER_FACES && this.skipFaceHeightMap(face.getDirection(), x, y, z)) {
                             continue;
                         }
-
                         int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.FLOAT_PER_VERTEX;
                         for (VoxelFaceVertex vertex : face.getVertices()) {
                             verticesIndex = this.addFaceVertices(
@@ -237,15 +189,14 @@ public class Chunk {
                 }
             }
         }
-
         if (Constants.INSTANCE_RENDERING) {
             this.indicesCount = indicesIndex;
         }
+        this.neighborHeightMap = null;
     }
 
-    public void loadData(Color[][][] data) {
-        this.data = data;
-        this.numVoxels = this.calculateVoxelCount();
+    public void loadDataNbt() {
+        this.numVoxels = this.calculateVoxelCount(nbtData);
         this.vertices = new float[this.countVertices()];
         if (Constants.INSTANCE_RENDERING) {
             this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
@@ -253,17 +204,16 @@ public class Chunk {
         }
         int verticesIndex = 0;
         int indicesIndex = 0;
-
         for (int x = 0; x < this.xSize; x++) {
             for (int y = 0; y < this.ySize; y++) {
                 for (int z = 0; z < this.zSize; z++) {
-                    Color color = this.data[x][y][z];
+                    Color color = nbtData[x][y][z];
                     if (color == null) {
                         continue;
                     }
                     int voxelVerticesStart = verticesIndex;
                     for (VoxelFace face : this.baseVoxel.getFaces()) {
-                        if (Constants.FILTER_FACES && this.skipFace(face, x, y, z)) {
+                        if (Constants.FILTER_FACES && this.skipFaceNbt(face.getDirection(), x, y, z)) {
                             continue;
                         }
                         int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.FLOAT_PER_VERTEX;
@@ -299,7 +249,7 @@ public class Chunk {
         }
     }
 
-    public void uploadBuffers(int programId) {
+    public void loadBuffers(int programId) {
         if (this.vertices == null) {
             return;
         }
@@ -337,10 +287,9 @@ public class Chunk {
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
         }
 
-        this.data = null;
         vertices = null;
         indices = null;
-        this.needsBufferUpdate = false;
+        this.needsBufferLoad = false;
     }
 
     public void render() {
@@ -364,41 +313,112 @@ public class Chunk {
                 * Constants.FLOAT_PER_VERTEX;
     }
 
-    private boolean isSolidVoxel(int x, int y, int z) {
-        if (x >= this.xSize || y >= this.ySize || z >= this.zSize || x < 0 || y < 0 || z < 0) {
-            return false;
-        }
-
-        return this.data[x][y][z] != null;
-    }
-
-    private boolean skipFace(VoxelFace face, int x, int y, int z) {
-        switch (face.getDirection()) {
+    private boolean skipFaceHeightMap(Direction direction, int x, int y, int z) {
+        switch (direction) {
             case FRONT:
-                return isSolidVoxel(x, y, z + 1);
+                if (z + 1 < Constants.NOISE_CHUNK_SIZE) {
+                    return y <= Math.ceil(this.heightMapData[x][z + 1]);
+                } else {
+                    return y <= Math.ceil(neighborHeightMap.get(Direction.FRONT)[x][0]);
+                }
             case BACK:
-                return isSolidVoxel(x, y, z - 1);
+                if (z - 1 >= 0) {
+                    return y <= Math.ceil(this.heightMapData[x][z - 1]);
+                } else {
+                    return y <= Math.ceil(neighborHeightMap.get(Direction.BACK)[x][Constants.NOISE_CHUNK_SIZE - 1]);
+                }
             case LEFT:
-                return isSolidVoxel(x - 1, y, z);
+                if (x - 1 >= 0) {
+                    return y <= Math.ceil(this.heightMapData[x - 1][z]);
+                } else {
+                    return y <= Math.ceil(neighborHeightMap.get(Direction.LEFT)[Constants.NOISE_CHUNK_SIZE - 1][z]);
+                }
             case RIGHT:
-                return isSolidVoxel(x + 1, y, z);
+                if (x + 1 < Constants.NOISE_CHUNK_SIZE) {
+                    return y <= Math.ceil(this.heightMapData[x + 1][z]);
+                } else {
+                    return y <= Math.ceil(neighborHeightMap.get(Direction.RIGHT)[0][z]);
+                }
             case TOP:
-                return isSolidVoxel(x, y + 1, z);
+                return y < Math.ceil(this.heightMapData[x][z]);
             case BOTTOM:
-                return isSolidVoxel(x, y - 1, z);
+                return y > 0;
         }
         return false;
     }
 
-    private int calculateVoxelCount() {
+    private boolean skipFaceNbt(Direction direction, int x, int y, int z) {
+        switch (direction) {
+            case FRONT:
+                if (z + 1 < this.zSize) {
+                    return this.nbtData[x][y][z + 1] != null;
+                } else {
+                    Color[][][] checkData = neighborNbtData.get(Direction.FRONT);
+                    return checkData != null && checkData[x][y][0] != null;
+                }
+            case BACK:
+                if (z - 1 >= 0) {
+                    return this.nbtData[x][y][z - 1] != null;
+                } else {
+                    Color[][][] checkData = neighborNbtData.get(Direction.BACK);
+                    return checkData != null && checkData[x][y][this.zSize - 1] != null;
+                }
+            case LEFT:
+                if (x - 1 >= 0) {
+                    return this.nbtData[x - 1][y][z] != null;
+                } else {
+                    Color[][][] checkData = neighborNbtData.get(Direction.LEFT);
+                    return checkData != null && checkData[this.xSize - 1][y][z] != null;
+                }
+            case RIGHT:
+                if (x + 1 < this.xSize) {
+                    return this.nbtData[x + 1][y][z] != null;
+                } else {
+                    Color[][][] checkData = neighborNbtData.get(Direction.RIGHT);
+                    return checkData != null && checkData[0][y][z] != null;
+                }
+            case TOP:
+                if (y + 1 < this.ySize) {
+                    return this.nbtData[x][y + 1][z] != null;
+                } else {
+                    Color[][][] checkData = neighborNbtData.get(Direction.TOP);
+                    return checkData != null && checkData[x][0][z] != null;
+                }
+            case BOTTOM:
+                if (y - 1 >= 0) {
+                    return this.nbtData[x][y - 1] != null;
+                } else {
+                    Color[][][] checkData = neighborNbtData.get(Direction.BOTTOM);
+                    return checkData != null && checkData[x][this.ySize - 1][z] != null;
+                }
+        }
+        return false;
+    }
+
+    private int calculateVoxelCount(Color[][][] data) {
         int voxelCount = 0;
 
         for (int x = 0; x < this.xSize; x++) {
             for (int y = 0; y < this.ySize; y++) {
                 for (int z = 0; z < this.zSize; z++) {
-                    if (this.data[x][y][z] != null) {
+                    if (data[x][y][z] != null) {
                         voxelCount++;
                     }
+                }
+            }
+        }
+
+        return voxelCount;
+    }
+
+    private int calculateVoxelCount(float[][] heightMap) {
+        int voxelCount = 0;
+
+        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
+            for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
+                int maxHeight = (int) Math.ceil(heightMap[x][z]);
+                for (int y = 0; y <= maxHeight; y++) {
+                    voxelCount++;
                 }
             }
         }

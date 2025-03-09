@@ -1,6 +1,6 @@
-package voxelengine.util.voxel;
+package voxelengine.util;
 
-public enum FaceDirection {
+public enum Direction {
     FRONT,
     BACK,
     LEFT,

@@ -2,6 +2,7 @@ package voxelengine.util.voxel;
 
 import org.joml.Vector3d;
 import voxelengine.util.Constants;
+import voxelengine.util.Direction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,15 +17,15 @@ public class Voxel {
 
     public Voxel() {
         faces = new ArrayList<>();
-        this.faces.add(createVoxelFace(FaceDirection.FRONT));
-        this.faces.add(createVoxelFace(FaceDirection.BACK));
-        this.faces.add(createVoxelFace(FaceDirection.LEFT));
-        this.faces.add(createVoxelFace(FaceDirection.RIGHT));
-        this.faces.add(createVoxelFace(FaceDirection.TOP));
-        this.faces.add(createVoxelFace(FaceDirection.BOTTOM));
+        this.faces.add(createVoxelFace(Direction.FRONT));
+        this.faces.add(createVoxelFace(Direction.BACK));
+        this.faces.add(createVoxelFace(Direction.LEFT));
+        this.faces.add(createVoxelFace(Direction.RIGHT));
+        this.faces.add(createVoxelFace(Direction.TOP));
+        this.faces.add(createVoxelFace(Direction.BOTTOM));
     }
 
-    private VoxelFace createVoxelFace(FaceDirection direction) {
+    private VoxelFace createVoxelFace(Direction direction) {
         int verticesCount;
         if (Constants.INSTANCE_RENDERING) {
             verticesCount = Constants.VOXEL_FACE_VERTICES_COUNT_INSTANCED;

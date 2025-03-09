@@ -1,11 +1,13 @@
 package voxelengine.util.voxel;
 
+import voxelengine.util.Direction;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class VoxelFace {
     private final List<VoxelFaceVertex> vertices;
-    private final FaceDirection direction;
+    private final Direction direction;
     private List<Integer> indices;
 
     public List<VoxelFaceVertex> getVertices() {
@@ -16,7 +18,7 @@ public class VoxelFace {
         return indices;
     }
 
-    public FaceDirection getDirection() {
+    public Direction getDirection() {
         return direction;
     }
 
@@ -24,7 +26,7 @@ public class VoxelFace {
         this.indices = indices;
     }
 
-    public VoxelFace(FaceDirection direction, int verticesCount) {
+    public VoxelFace(Direction direction, int verticesCount) {
         this.direction = direction;
         this.vertices = new ArrayList<>(verticesCount);
     }
