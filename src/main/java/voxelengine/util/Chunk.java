@@ -126,12 +126,10 @@ public class Chunk {
         this.eboId = glGenBuffers();
         this.neighborHeightMap = new EnumMap<>(Direction.class);
         this.neighborNbtData = new EnumMap<>(Direction.class);
-
-
     }
 
     public void loadDataHeightMap() {
-        this.numVoxels = this.calculateVoxelCount(heightMapData);
+        this.numVoxels = this.calculateVoxelCountHeightMap();
         this.vertices = new float[this.countVertices()];
         if (Constants.INSTANCE_RENDERING) {
             this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
@@ -196,7 +194,7 @@ public class Chunk {
     }
 
     public void loadDataNbt() {
-        this.numVoxels = this.calculateVoxelCount(nbtData);
+        this.numVoxels = this.calculateVoxelCountNbt();
         this.vertices = new float[this.countVertices()];
         if (Constants.INSTANCE_RENDERING) {
             this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
@@ -395,13 +393,13 @@ public class Chunk {
         return false;
     }
 
-    private int calculateVoxelCount(Color[][][] data) {
+    private int calculateVoxelCountNbt() {
         int voxelCount = 0;
 
         for (int x = 0; x < this.xSize; x++) {
             for (int y = 0; y < this.ySize; y++) {
                 for (int z = 0; z < this.zSize; z++) {
-                    if (data[x][y][z] != null) {
+                    if (this.nbtData[x][y][z] != null) {
                         voxelCount++;
                     }
                 }
@@ -411,12 +409,12 @@ public class Chunk {
         return voxelCount;
     }
 
-    private int calculateVoxelCount(float[][] heightMap) {
+    private int calculateVoxelCountHeightMap() {
         int voxelCount = 0;
 
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                int maxHeight = (int) Math.ceil(heightMap[x][z]);
+                int maxHeight = (int) Math.ceil(this.heightMapData[x][z]);
                 for (int y = 0; y <= maxHeight; y++) {
                     voxelCount++;
                 }
