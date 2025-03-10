@@ -6,6 +6,7 @@ import voxelengine.util.voxel.VoxelFace;
 import voxelengine.util.voxel.VoxelFaceVertex;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.EnumMap;
@@ -42,11 +43,12 @@ public class Chunk {
 
     private int numVoxels;
     private int indicesCount;
-    private float[] vertices;
-    private int[] indices;
+    private FloatBuffer verticesBuffer;
+    private IntBuffer indicesBuffer;
     private float[][] heightMapData;
     private Color[][][] nbtData;
     private boolean needsBufferLoad = false;
+    private boolean needsAttributeLoad = true;
     private Map<Direction, float[][]> neighborHeightMap;
     private Map<Direction, Color[][][]> neighborNbtData;
 
@@ -129,17 +131,19 @@ public class Chunk {
     }
 
     public void loadDataHeightMap() {
+        this.indicesCount = 0;
         this.numVoxels = this.calculateVoxelCountHeightMap();
-        this.vertices = new float[this.countVertices()];
+        this.verticesBuffer = ByteBuffer.allocateDirect(this.countVertices() * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
         if (Constants.INSTANCE_RENDERING) {
-            this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
-                    * Constants.VOXEL_FACE_INDICES_COUNT];
+            this.indicesBuffer = ByteBuffer.allocateDirect(this.numVoxels * Constants.VOXEL_FACES_COUNT
+                            * Constants.VOXEL_FACE_INDICES_COUNT * Integer.BYTES)
+                    .order(ByteOrder.nativeOrder())
+                    .asIntBuffer();
         }
         float sandLevel = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
         float mountainLevel = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
         float snowLevel = Constants.NOISE_CHUNK_MAX_Y * 0.8f;
         int verticesIndex = 0;
-        int indicesIndex = 0;
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
                 int maxHeight = (int) Math.ceil(heightMapData[x][z]);
@@ -180,28 +184,30 @@ public class Chunk {
                             int baseOffset = voxelVerticesStart / Constants.FLOAT_PER_VERTEX;
                             for (Integer index : face.getIndices()) {
                                 int localIndex = index % face.getVertices().size();
-                                this.indices[indicesIndex++] = baseOffset + faceVerticesOffset + localIndex;
+                                this.indicesBuffer.put(baseOffset + faceVerticesOffset + localIndex);
+                                this.indicesCount++;
                             }
                         }
                     }
                 }
             }
         }
-        if (Constants.INSTANCE_RENDERING) {
-            this.indicesCount = indicesIndex;
-        }
         this.neighborHeightMap = null;
     }
 
     public void loadDataNbt() {
+        this.indicesCount = 0;
         this.numVoxels = this.calculateVoxelCountNbt();
-        this.vertices = new float[this.countVertices()];
+        this.verticesBuffer = ByteBuffer.allocateDirect(this.countVertices() * Float.BYTES)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
         if (Constants.INSTANCE_RENDERING) {
-            this.indices = new int[this.numVoxels * Constants.VOXEL_FACES_COUNT
-                    * Constants.VOXEL_FACE_INDICES_COUNT];
+            this.indicesBuffer = ByteBuffer.allocateDirect(this.numVoxels * Constants.VOXEL_FACES_COUNT
+                            * Constants.VOXEL_FACE_INDICES_COUNT * Integer.BYTES)
+                    .order(ByteOrder.nativeOrder())
+                    .asIntBuffer();
         }
         int verticesIndex = 0;
-        int indicesIndex = 0;
         for (int x = 0; x < this.xSize; x++) {
             for (int y = 0; y < this.ySize; y++) {
                 for (int z = 0; z < this.zSize; z++) {
@@ -234,24 +240,21 @@ public class Chunk {
                             for (Integer index : face.getIndices()) {
                                 int localIndex = index
                                         % face.getVertices().size();
-                                this.indices[indicesIndex++] = baseOffset + faceVerticesOffset + localIndex;
+                                this.indicesBuffer.put(baseOffset + faceVerticesOffset + localIndex);
+                                this.indicesCount++;
                             }
                         }
                     }
                 }
             }
         }
-
-        if (Constants.INSTANCE_RENDERING) {
-            this.indicesCount = indicesIndex;
-        }
     }
 
     public void loadBuffers(int programId) {
-        if (this.vertices == null) {
+        if (this.verticesBuffer == null) {
             return;
         }
-        if (Constants.INSTANCE_RENDERING && this.indices == null) {
+        if (Constants.INSTANCE_RENDERING && this.indicesBuffer == null) {
             return;
         }
 
@@ -260,33 +263,27 @@ public class Chunk {
         glBindVertexArray(this.vaoId);
         glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
 
-        FloatBuffer verticesBuffer = ByteBuffer.allocateDirect(this.vertices.length * Float.BYTES)
-                .order(java.nio.ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        verticesBuffer.put(this.vertices).flip();
+        glBufferData(GL_ARRAY_BUFFER, verticesBuffer.flip(), GL_STATIC_DRAW);
 
-        glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
+        if (this.needsAttributeLoad) {
+            glVertexAttribPointer(0, 3, GL_FLOAT, false, 9 * Float.BYTES, 0);
+            glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 9 * Float.BYTES, 0);
-        glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, false, 9 * Float.BYTES, 3 * Float.BYTES);
+            glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 9 * Float.BYTES, (long) 3 * Float.BYTES);
-        glEnableVertexAttribArray(1);
-
-        glVertexAttribPointer(2, 3, GL_FLOAT, false, 9 * Float.BYTES, (long) 6 * Float.BYTES);
-        glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 3, GL_FLOAT, false, 9 * Float.BYTES, 6 * Float.BYTES);
+            glEnableVertexAttribArray(2);
+            this.needsAttributeLoad = false;
+        }
 
         if (Constants.INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
-            IntBuffer indicesBuffer = ByteBuffer.allocateDirect(this.indices.length * Integer.BYTES)
-                    .order(java.nio.ByteOrder.nativeOrder())
-                    .asIntBuffer();
-            indicesBuffer.put(this.indices).flip();
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, this.indicesBuffer.flip(), GL_STATIC_DRAW);
         }
 
-        vertices = null;
-        indices = null;
+        this.verticesBuffer = null;
+        this.indicesBuffer = null;
         this.needsBufferLoad = false;
     }
 
@@ -340,7 +337,7 @@ public class Chunk {
             case TOP:
                 return y < Math.ceil(this.heightMapData[x][z]);
             case BOTTOM:
-                return y > 0;
+                return true;
         }
         return false;
     }
@@ -425,17 +422,18 @@ public class Chunk {
     }
 
     private int addFaceVertices(int index, float x, float y, float z, float r, float g, float b, float normalX, float normalY, float normalZ) {
-        this.vertices[index++] = x;
-        this.vertices[index++] = y;
-        this.vertices[index++] = z;
+        this.verticesBuffer.put(x);
+        this.verticesBuffer.put(y);
+        this.verticesBuffer.put(z);
 
-        this.vertices[index++] = r;
-        this.vertices[index++] = g;
-        this.vertices[index++] = b;
+        this.verticesBuffer.put(r);
+        this.verticesBuffer.put(g);
+        this.verticesBuffer.put(b);
 
-        this.vertices[index++] = normalX;
-        this.vertices[index++] = normalY;
-        this.vertices[index++] = normalZ;
-        return index;
+        this.verticesBuffer.put(normalX);
+        this.verticesBuffer.put(normalY);
+        this.verticesBuffer.put(normalZ);
+
+        return index + 9;
     }
 }

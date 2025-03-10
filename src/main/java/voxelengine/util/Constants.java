@@ -22,7 +22,7 @@ public final class Constants {
     public static final int NBT_CHUNK_SIZE = 48;
     public static final int NOISE_CHUNK_SIZE = 16;
     public static final int NOISE_CHUNK_MAX_Y = 128;
-    public static final int NOISE_CHUNK_RADIUS = 10;
+    public static final int NOISE_CHUNK_RADIUS = 20;
     public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 2;
     public static final int WORLD_SEED = 1337;
     public static final int CAMERA_FOV = 90;
