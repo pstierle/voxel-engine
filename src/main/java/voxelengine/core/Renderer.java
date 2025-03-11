@@ -116,7 +116,7 @@ public class Renderer {
         view.lookAt(this.camera.getPosition(), center, this.camera.getUp());
 
         double aspectRatio = (double) this.window.getWidth() / this.window.getHeight();
-        projection.perspective(Math.toRadians(Constants.CAMERA_FOV), aspectRatio, 0.1, 1000);
+        projection.perspective(Math.toRadians(Constants.CAMERA_FOV), aspectRatio, 0.1, 10000);
 
         FloatBuffer viewDest = BufferUtils.createFloatBuffer(16);
         view.get(viewDest);
