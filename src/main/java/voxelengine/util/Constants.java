@@ -24,10 +24,10 @@ public final class Constants {
     public static final boolean NBT_DEBUG = false;
     public static final String NBT_FOLDER_PATH = "world/time";
 
-    public static final int NOISE_CHUNK_SIZE = 32;
-    public static final int NOISE_CHUNK_MAX_Y = 128;
-    public static final int NOISE_CHUNK_RADIUS = 20;
-    public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 5;
+    public static final int NOISE_CHUNK_SIZE = 64;
+    public static final int NOISE_CHUNK_MAX_Y = 320;
+    public static final int NOISE_CHUNK_RADIUS = 10;
+    public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 100;
     public static final int NOISE_WORLD_SEED = 1337;
 
     public static final boolean OPTIMIZATION_INSTANCE_RENDERING = true;

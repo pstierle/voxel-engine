@@ -103,9 +103,9 @@ public class Renderer {
                         Direction.BOTTOM
                 );
 
-                FloatBuffer normalBuffer = ByteBuffer.allocateDirect(normalPalette.size() * 3 * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+                FloatBuffer normalBuffer = ByteBuffer.allocateDirect(normalPalette.size() * 4 * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
                 for (Direction direction : normalPalette) {
-                    normalBuffer.put((float) direction.getNormal().x).put((float) direction.getNormal().y).put((float) direction.getNormal().z);
+                    normalBuffer.put((float) direction.getNormal().x).put((float) direction.getNormal().y).put((float) direction.getNormal().z).put(1.0f);
                 }
                 normalBuffer.flip();
 

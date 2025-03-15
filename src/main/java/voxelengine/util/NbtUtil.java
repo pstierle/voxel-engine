@@ -143,9 +143,10 @@ public class NbtUtil {
             chunk.setNeighborNbtData(neighborNbtData);
         }
 
-        for (Chunk chunk : chunks) {
-            chunk.loadDataNbt();
-            chunk.loadBuffers(this.renderer.getProgramId());
+        for (int i = 0; i < chunks.size(); i++) {
+            Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
+            chunks.get(i).loadDataNbt();
+            chunks.get(i).loadBuffers(this.renderer.getProgramId());
         }
 
         return chunks;

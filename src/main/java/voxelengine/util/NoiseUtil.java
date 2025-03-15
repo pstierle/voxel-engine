@@ -105,9 +105,10 @@ public class NoiseUtil {
             updateChunkNeighbourHeightMap(chunks, chunk);
         }
 
-        for (Chunk chunk : chunks) {
-            chunk.loadDataHeightMap();
-            chunk.loadBuffers(this.renderer.getProgramId());
+        for (int i = 0; i < chunks.size(); i++) {
+            Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
+            chunks.get(i).loadDataHeightMap();
+            chunks.get(i).loadBuffers(this.renderer.getProgramId());
         }
 
         return chunks;
