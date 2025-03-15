@@ -22,7 +22,7 @@ public final class Constants {
 
     public static final int NBT_CHUNK_SIZE = 48;
     public static final boolean NBT_DEBUG = false;
-    public static final String NBT_FOLDER_PATH = "world/colluseum";
+    public static final String NBT_FOLDER_PATH = "world/time";
 
     public static final int NOISE_CHUNK_SIZE = 32;
     public static final int NOISE_CHUNK_MAX_Y = 128;
