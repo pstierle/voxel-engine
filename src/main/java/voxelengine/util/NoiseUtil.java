@@ -16,15 +16,15 @@ public class NoiseUtil {
     private final Camera camera;
 
     public NoiseUtil(Renderer renderer, Camera camera) {
-        this.baseNoise = new FastNoiseLite(Constants.WORLD_SEED);
+        this.baseNoise = new FastNoiseLite(Constants.NOISE_WORLD_SEED);
         this.baseNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         this.baseNoise.SetFrequency(0.01f);
 
-        this.detailNoise = new FastNoiseLite(Constants.WORLD_SEED);
+        this.detailNoise = new FastNoiseLite(Constants.NOISE_WORLD_SEED);
         this.detailNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         this.detailNoise.SetFrequency(0.02f);
 
-        this.largeFeatureNoise = new FastNoiseLite(Constants.WORLD_SEED);
+        this.largeFeatureNoise = new FastNoiseLite(Constants.NOISE_WORLD_SEED);
         this.largeFeatureNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         this.largeFeatureNoise.SetFrequency(0.005f);
 
@@ -87,11 +87,8 @@ public class NoiseUtil {
     }
 
     public List<Chunk> loadWorld() {
-        int playerX = (int) this.camera.getPosition().x;
-        int playerZ = (int) this.camera.getPosition().z;
-
-        int playerChunkX = Math.floorDiv(playerX, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
-        int playerChunkZ = Math.floorDiv(playerZ, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
+        int playerChunkX = this.camera.getChunkX();
+        int playerChunkZ = this.camera.getChunkZ();
 
         List<Chunk> chunks = new ArrayList<>();
 

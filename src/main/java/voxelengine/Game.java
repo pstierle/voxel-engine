@@ -33,7 +33,7 @@ public class Game {
         this.window.init();
         this.renderer.init(camera, window);
 
-        switch (Constants.EXAMPLE) {
+        switch (Constants.WORLD_EXAMPLE) {
             case TRIANGLE_2D:
                 this.example = new Triangle2d();
                 break;

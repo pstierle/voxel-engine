@@ -130,16 +130,9 @@ public class Chunk {
         this.neighborNbtData = new EnumMap<>(Direction.class);
     }
 
+
     public void loadDataHeightMap() {
-        this.indicesCount = 0;
-        this.numVoxels = this.calculateVoxelCountHeightMap();
-        this.verticesBuffer = ByteBuffer.allocateDirect(this.countVertices() * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        if (Constants.INSTANCE_RENDERING) {
-            this.indicesBuffer = ByteBuffer.allocateDirect(this.numVoxels * Constants.VOXEL_FACES_COUNT
-                            * Constants.VOXEL_FACE_INDICES_COUNT * Integer.BYTES)
-                    .order(ByteOrder.nativeOrder())
-                    .asIntBuffer();
-        }
+        this.setupBuffers();
         float sandLevel = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
         float mountainLevel = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
         float snowLevel = Constants.NOISE_CHUNK_MAX_Y * 0.8f;
@@ -160,35 +153,7 @@ public class Chunk {
                     } else {
                         color = new Color(0.95f, 0.95f, 0.95f);
                     }
-                    int voxelVerticesStart = verticesIndex;
-                    for (VoxelFace face : this.baseVoxel.getFaces()) {
-                        if (Constants.FILTER_FACES && this.skipFaceHeightMap(face.getDirection(), x, y, z)) {
-                            continue;
-                        }
-                        int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.FLOAT_PER_VERTEX;
-                        for (VoxelFaceVertex vertex : face.getVertices()) {
-                            verticesIndex = this.addFaceVertices(
-                                    verticesIndex,
-                                    (float) vertex.getPosition().x + this.xOffset + x,
-                                    (float) vertex.getPosition().y + this.yOffset + y,
-                                    (float) vertex.getPosition().z + this.zOffset + z,
-                                    color.getR(),
-                                    color.getG(),
-                                    color.getB(),
-                                    (float) vertex.getNormal().x,
-                                    (float) vertex.getNormal().y,
-                                    (float) vertex.getNormal().z
-                            );
-                        }
-                        if (Constants.INSTANCE_RENDERING) {
-                            int baseOffset = voxelVerticesStart / Constants.FLOAT_PER_VERTEX;
-                            for (Integer index : face.getIndices()) {
-                                int localIndex = index % face.getVertices().size();
-                                this.indicesBuffer.put(baseOffset + faceVerticesOffset + localIndex);
-                                this.indicesCount++;
-                            }
-                        }
-                    }
+                    verticesIndex = this.loadFaces(verticesIndex, color, x, y, z);
                 }
             }
         }
@@ -196,17 +161,7 @@ public class Chunk {
     }
 
     public void loadDataNbt() {
-        this.indicesCount = 0;
-        this.numVoxels = this.calculateVoxelCountNbt();
-        this.verticesBuffer = ByteBuffer.allocateDirect(this.countVertices() * Float.BYTES)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        if (Constants.INSTANCE_RENDERING) {
-            this.indicesBuffer = ByteBuffer.allocateDirect(this.numVoxels * Constants.VOXEL_FACES_COUNT
-                            * Constants.VOXEL_FACE_INDICES_COUNT * Integer.BYTES)
-                    .order(ByteOrder.nativeOrder())
-                    .asIntBuffer();
-        }
+        this.setupBuffers();
         int verticesIndex = 0;
         for (int x = 0; x < this.xSize; x++) {
             for (int y = 0; y < this.ySize; y++) {
@@ -215,36 +170,7 @@ public class Chunk {
                     if (color == null) {
                         continue;
                     }
-                    int voxelVerticesStart = verticesIndex;
-                    for (VoxelFace face : this.baseVoxel.getFaces()) {
-                        if (Constants.FILTER_FACES && this.skipFaceNbt(face.getDirection(), x, y, z)) {
-                            continue;
-                        }
-                        int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.FLOAT_PER_VERTEX;
-                        for (VoxelFaceVertex vertex : face.getVertices()) {
-                            verticesIndex = this.addFaceVertices(
-                                    verticesIndex,
-                                    (float) vertex.getPosition().x + this.xOffset + x,
-                                    (float) vertex.getPosition().y + this.yOffset + y,
-                                    (float) vertex.getPosition().z + this.zOffset + z,
-                                    color.getR(),
-                                    color.getG(),
-                                    color.getB(),
-                                    (float) vertex.getNormal().x,
-                                    (float) vertex.getNormal().y,
-                                    (float) vertex.getNormal().z
-                            );
-                        }
-                        if (Constants.INSTANCE_RENDERING) {
-                            int baseOffset = voxelVerticesStart / Constants.FLOAT_PER_VERTEX;
-                            for (Integer index : face.getIndices()) {
-                                int localIndex = index
-                                        % face.getVertices().size();
-                                this.indicesBuffer.put(baseOffset + faceVerticesOffset + localIndex);
-                                this.indicesCount++;
-                            }
-                        }
-                    }
+                    verticesIndex = this.loadFaces(verticesIndex, color, x, y, z);
                 }
             }
         }
@@ -254,7 +180,7 @@ public class Chunk {
         if (this.verticesBuffer == null) {
             return;
         }
-        if (Constants.INSTANCE_RENDERING && this.indicesBuffer == null) {
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING && this.indicesBuffer == null) {
             return;
         }
 
@@ -277,7 +203,7 @@ public class Chunk {
             this.needsAttributeLoad = false;
         }
 
-        if (Constants.INSTANCE_RENDERING) {
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, this.indicesBuffer.flip(), GL_STATIC_DRAW);
         }
@@ -289,7 +215,7 @@ public class Chunk {
 
     public void render() {
         glBindVertexArray(this.vaoId);
-        if (Constants.INSTANCE_RENDERING) {
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
             glDrawElements(GL_TRIANGLES, this.indicesCount, GL_UNSIGNED_INT, 0);
         } else {
@@ -300,12 +226,46 @@ public class Chunk {
 
     private int countVertices() {
         int voxelFaceVerticesCount = Constants.VOXEL_FACE_VERTICES_COUNT;
-        if (Constants.INSTANCE_RENDERING) {
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             voxelFaceVerticesCount = Constants.VOXEL_FACE_VERTICES_COUNT_INSTANCED;
         }
         return this.numVoxels * Constants.VOXEL_FACES_COUNT
                 * voxelFaceVerticesCount
-                * Constants.FLOAT_PER_VERTEX;
+                * Constants.VOXEL_FLOAT_PER_VERTEX;
+    }
+
+    private int loadFaces(int voxelVerticesStart, Color color, int x, int y, int z) {
+        int verticesIndex = voxelVerticesStart;
+        for (VoxelFace face : this.baseVoxel.getFaces()) {
+            if (Constants.OPTIMIZATION_FILTER_FACES && Constants.WORLD_NBT ? this.skipFaceNbt(face.getDirection(), x, y, z) : this.skipFaceHeightMap(face.getDirection(), x, y, z)) {
+                continue;
+            }
+            int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.VOXEL_FLOAT_PER_VERTEX;
+            for (VoxelFaceVertex vertex : face.getVertices()) {
+                verticesIndex = this.addFaceVertices(
+                        verticesIndex,
+                        (float) vertex.getPosition().x + this.xOffset + x,
+                        (float) vertex.getPosition().y + this.yOffset + y,
+                        (float) vertex.getPosition().z + this.zOffset + z,
+                        color.getR(),
+                        color.getG(),
+                        color.getB(),
+                        (float) vertex.getNormal().x,
+                        (float) vertex.getNormal().y,
+                        (float) vertex.getNormal().z
+                );
+            }
+            if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
+                int baseOffset = voxelVerticesStart / Constants.VOXEL_FLOAT_PER_VERTEX;
+                for (Integer index : face.getIndices()) {
+                    int localIndex = index
+                            % face.getVertices().size();
+                    this.indicesBuffer.put(baseOffset + faceVerticesOffset + localIndex);
+                    this.indicesCount++;
+                }
+            }
+        }
+        return verticesIndex;
     }
 
     private boolean skipFaceHeightMap(Direction direction, int x, int y, int z) {
@@ -419,6 +379,22 @@ public class Chunk {
         }
 
         return voxelCount;
+    }
+
+    private void setupBuffers() {
+        this.indicesCount = 0;
+        if (Constants.WORLD_NBT) {
+            this.numVoxels = this.calculateVoxelCountNbt();
+        } else {
+            this.numVoxels = this.calculateVoxelCountHeightMap();
+        }
+        this.verticesBuffer = ByteBuffer.allocateDirect(this.countVertices() * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
+            this.indicesBuffer = ByteBuffer.allocateDirect(this.numVoxels * Constants.VOXEL_FACES_COUNT
+                            * Constants.VOXEL_FACE_INDICES_COUNT * Integer.BYTES)
+                    .order(ByteOrder.nativeOrder())
+                    .asIntBuffer();
+        }
     }
 
     private int addFaceVertices(int index, float x, float y, float z, float r, float g, float b, float normalX, float normalY, float normalZ) {

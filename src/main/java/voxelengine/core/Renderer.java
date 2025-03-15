@@ -60,7 +60,7 @@ public class Renderer {
         this.lastFrameTime = glfwGetTime();
         this.programId = glCreateProgram();
 
-        if (Constants.EXAMPLE == ExampleType.TRIANGLE_2D || Constants.EXAMPLE == ExampleType.VOXEL_2D) {
+        if (Constants.WORLD_EXAMPLE == ExampleType.TRIANGLE_2D || Constants.WORLD_EXAMPLE == ExampleType.VOXEL_2D) {
             Shader.loadShader(this.programId, "shaders/basic.fs", GL_FRAGMENT_SHADER);
             Shader.loadShader(this.programId, "shaders/basic.vs", GL_VERTEX_SHADER);
         } else {

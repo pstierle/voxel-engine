@@ -75,6 +75,14 @@ public class Camera {
         this.front.set(direction);
     }
 
+    public int getChunkX() {
+        return Math.floorDiv((int) this.position.x, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
+    }
+
+    public int getChunkZ() {
+        return Math.floorDiv((int) this.position.z, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
+    }
+
     public Vector3d getPosition() {
         return position;
     }

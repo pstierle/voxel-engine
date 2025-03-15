@@ -33,7 +33,7 @@ public class NbtUtil {
     public List<Chunk> loadWorld() {
         List<Chunk> chunks = new ArrayList<>();
 
-        if (Constants.DEBUG_NBT) {
+        if (Constants.NBT_DEBUG) {
             for (int dx = 0; dx < 4; dx++) {
                 for (int dz = 0; dz < 4; dz++) {
                     Chunk chunk = new Chunk(dx * Constants.NBT_CHUNK_SIZE, 0, dz * Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);

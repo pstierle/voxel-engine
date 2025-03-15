@@ -27,14 +27,14 @@ public class Voxel {
 
     private VoxelFace createVoxelFace(Direction direction) {
         int verticesCount;
-        if (Constants.INSTANCE_RENDERING) {
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             verticesCount = Constants.VOXEL_FACE_VERTICES_COUNT_INSTANCED;
         } else {
             verticesCount = Constants.VOXEL_FACE_VERTICES_COUNT;
         }
         VoxelFace face = new VoxelFace(direction, verticesCount);
 
-        if (Constants.INSTANCE_RENDERING) {
+        if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             switch (direction) {
                 case FRONT:
                     face.addVertex(

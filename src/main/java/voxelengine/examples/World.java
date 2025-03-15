@@ -39,7 +39,7 @@ public class World implements BaseExample {
         int processorCount = Runtime.getRuntime().availableProcessors();
         threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
 
-        if (Constants.LOAD_WORLD_NBT) {
+        if (Constants.WORLD_NBT) {
             this.chunks = new NbtUtil(renderer).loadWorld();
         } else {
             this.chunks = new CopyOnWriteArrayList<>(this.noiseUtil.loadWorld());
@@ -48,7 +48,7 @@ public class World implements BaseExample {
 
     @Override
     public void update() {
-        if (Constants.LOAD_WORLD_NBT) {
+        if (Constants.WORLD_NBT) {
             return;
         }
 
@@ -70,10 +70,8 @@ public class World implements BaseExample {
     }
 
     private void updateChunks() {
-        int playerX = (int) this.camera.getPosition().x;
-        int playerZ = (int) this.camera.getPosition().z;
-        int playerChunkX = Math.floorDiv(playerX, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
-        int playerChunkZ = Math.floorDiv(playerZ, Constants.NOISE_CHUNK_SIZE) * Constants.NOISE_CHUNK_SIZE;
+        int playerChunkX = this.camera.getChunkX();
+        int playerChunkZ = this.camera.getChunkZ();
 
         Set<Vector2d> visibleChunkPositions = new HashSet<>();
         int radius = Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE;
