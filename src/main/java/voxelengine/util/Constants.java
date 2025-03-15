@@ -6,7 +6,7 @@ public final class Constants {
     private Constants() {
     }
 
-    public static final boolean WORLD_NBT = false;
+    public static final boolean WORLD_NBT = true;
     public static final ExampleType WORLD_EXAMPLE = ExampleType.WORLD;
 
     public static final double MOUSE_SENSITIVITY = 0.2;
@@ -18,17 +18,19 @@ public final class Constants {
     public static final int VOXEL_FACE_VERTICES_COUNT_INSTANCED = 4;
     public static final int VOXEL_FACE_INDICES_COUNT = 6;
     public static final int VOXEL_FLOAT_PER_VERTEX = 9;
+    public static final int VOXEL_FLOAT_PER_VERTEX_OPTIMIZATION_SHADER_MEMORY = 5;
 
     public static final int NBT_CHUNK_SIZE = 48;
     public static final boolean NBT_DEBUG = false;
-    public static final String NBT_FOLDER_PATH = "world/italy";
+    public static final String NBT_FOLDER_PATH = "world/colluseum";
 
     public static final int NOISE_CHUNK_SIZE = 32;
     public static final int NOISE_CHUNK_MAX_Y = 128;
     public static final int NOISE_CHUNK_RADIUS = 20;
-    public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 30;
+    public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 5;
     public static final int NOISE_WORLD_SEED = 1337;
 
     public static final boolean OPTIMIZATION_INSTANCE_RENDERING = true;
     public static final boolean OPTIMIZATION_FILTER_FACES = true;
+    public static final boolean OPTIMIZATION_SHADER_MEMORY = true;
 }

@@ -37,218 +37,100 @@ public class Voxel {
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             switch (direction) {
                 case FRONT:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
                     face.setIndices(new ArrayList<>(Arrays.asList(0, 1, 2, 0, 2, 3)));
                     break;
                 case BACK:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
                     face.setIndices(new ArrayList<>(Arrays.asList(0, 1, 2, 0, 2, 3)));
                     break;
                 case LEFT:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, -0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
                     face.setIndices(new ArrayList<>(Arrays.asList(0, 1, 2, 0, 2, 3)));
                     break;
                 case RIGHT:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, 0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, 0.5));
                     face.setIndices(new ArrayList<>(Arrays.asList(0, 1, 2, 0, 2, 3)));
                     break;
                 case TOP:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
                     face.setIndices(new ArrayList<>(Arrays.asList(0, 1, 2, 0, 2, 3)));
                     break;
                 case BOTTOM:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
                     face.setIndices(new ArrayList<>(Arrays.asList(0, 1, 2, 0, 2, 3)));
                     break;
             }
         } else {
             switch (direction) {
                 case FRONT:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(new VoxelFaceVertex(new Vector3d(0.5, 0.5, 0.5),
-                            new Vector3d(0.0, 0.0, 1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 0.0, 1.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
                     break;
                 case BACK:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, 0.0, -1.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
                     break;
                 case LEFT:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, -0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(-1.0, 0.0, 0.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
                     break;
                 case RIGHT:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(1.0, 0.0, 0.0)));
-                    face.addVertex(new VoxelFaceVertex(new Vector3d(0.5, 0.5, 0.5),
-                            new Vector3d(1.0, 0.0, 0.0)));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, 0.5));
                     break;
                 case TOP:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, 0.5, -0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(new VoxelFaceVertex(new Vector3d(0.5, 0.5, 0.5),
-                            new Vector3d(0.0, 1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, 0.5, 0.5),
-                                    new Vector3d(0.0, 1.0, 0.0)));
+                    face.addVertex(new Vector3d(-0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, -0.5));
+                    face.addVertex(new Vector3d(0.5, 0.5, 0.5));
+                    face.addVertex(new Vector3d(-0.5, 0.5, 0.5));
                     break;
                 case BOTTOM:
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(-0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, 0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
-                    face.addVertex(
-                            new VoxelFaceVertex(new Vector3d(0.5, -0.5, -0.5),
-                                    new Vector3d(0.0, -1.0, 0.0)));
+                    face.addVertex(new Vector3d(-0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
+                    face.addVertex(new Vector3d(-0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, 0.5));
+                    face.addVertex(new Vector3d(0.5, -0.5, -0.5));
                     break;
             }
         }
-
         return face;
     }
 }

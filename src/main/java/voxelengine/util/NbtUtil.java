@@ -34,14 +34,16 @@ public class NbtUtil {
         List<Chunk> chunks = new ArrayList<>();
 
         if (Constants.NBT_DEBUG) {
+            ColorUtil.nbtColors = List.of(new Color(1.0f, 0.0f, 0.0f));
+
             for (int dx = 0; dx < 4; dx++) {
                 for (int dz = 0; dz < 4; dz++) {
                     Chunk chunk = new Chunk(dx * Constants.NBT_CHUNK_SIZE, 0, dz * Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);
-                    Color[][][] data = new Color[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
+                    Integer[][][] data = new Integer[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
                     for (int x = 0; x < Constants.NBT_CHUNK_SIZE; x++) {
                         for (int y = 0; y < Constants.NBT_CHUNK_SIZE; y++) {
                             for (int z = 0; z < Constants.NBT_CHUNK_SIZE; z++) {
-                                data[x][y][z] = new Color(0.5f, 0.5f, 0.5f);
+                                data[x][y][z] = 0;
                             }
                         }
                     }
@@ -61,7 +63,6 @@ public class NbtUtil {
                 ObjectMapper objectMapper = new ObjectMapper();
                 @SuppressWarnings("unchecked")
                 Map<String, String> colorsMap = objectMapper.readValue(colorsFile, Map.class);
-                List<Color> colorsList = new ArrayList<>();
 
                 URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_FOLDER_PATH);
 
@@ -75,35 +76,36 @@ public class NbtUtil {
                     for (Path entry : stream) {
                         Nbt nbt = new Nbt();
                         CompoundTag compoundTag = nbt.fromFile(entry.toFile());
-
                         if (!colorsLoaded) {
                             ListTag<Tag> paletteTag = compoundTag.getList("palette");
+                            List<Color> colors = new ArrayList<>();
                             for (Tag tag : paletteTag) {
                                 @SuppressWarnings("unchecked")
                                 Map<String, Object> tagMap = (Map<String, Object>) tag.getValue();
                                 StringTag colorName = (StringTag) tagMap.get("Name");
                                 String colorString = colorsMap.get(colorName.getValue());
                                 Color color = Color.fromString(colorString);
-                                colorsList.add(color);
+                                colors.add(color);
                             }
+                            ColorUtil.nbtColors = colors;
                             colorsLoaded = true;
                         }
+
                         int[] chunkOffset = parseChunkOffset(entry.getFileName().toString());
                         Chunk chunk = new Chunk(chunkOffset[0], chunkOffset[1], chunkOffset[2], Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);
-                        Color[][][] data = new Color[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
+                        Integer[][][] data = new Integer[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
                         ListTag<Tag> blocksTag = compoundTag.getList("blocks");
                         int voxelCount = 0;
                         for (Tag tag : blocksTag) {
                             @SuppressWarnings("unchecked")
                             Map<String, Object> tagMap = (Map<String, Object>) tag.getValue();
                             IntTag colorIndex = (IntTag) tagMap.get("state");
-                            Color color = colorsList.get(colorIndex.getValue());
                             @SuppressWarnings("unchecked")
                             ListTag<Tag> positions = (ListTag<Tag>) tagMap.get("pos");
                             Integer xPos = ((IntTag) positions.get(0)).getValue();
                             Integer yPos = ((IntTag) positions.get(1)).getValue();
                             Integer zPos = ((IntTag) positions.get(2)).getValue();
-                            data[xPos][yPos][zPos] = color;
+                            data[xPos][yPos][zPos] = colorIndex.getValue();
                             voxelCount++;
                         }
                         if (voxelCount > 0) {
@@ -118,7 +120,7 @@ public class NbtUtil {
         }
 
         for (Chunk chunk : chunks) {
-            Map<Direction, Color[][][]> neighborNbtData = new EnumMap<>(Direction.class);
+            Map<Direction, Integer[][][]> neighborNbtData = new EnumMap<>(Direction.class);
             for (Chunk neighbourChunk : chunks) {
                 Direction neighborDirection = null;
                 if (neighbourChunk.getZOffset() == chunk.getZOffset() + chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {

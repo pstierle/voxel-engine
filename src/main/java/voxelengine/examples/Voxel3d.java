@@ -1,10 +1,10 @@
 package voxelengine.examples;
 
+import org.joml.Vector3d;
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
 import voxelengine.util.voxel.Voxel;
 import voxelengine.util.voxel.VoxelFace;
-import voxelengine.util.voxel.VoxelFaceVertex;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -34,18 +34,18 @@ public class Voxel3d implements BaseExample {
         int verticesIndex = 0;
 
         for (VoxelFace face : voxel.getFaces()) {
-            for (VoxelFaceVertex vertex : face.getVertices()) {
-                vertices[verticesIndex++] = (float) vertex.getPosition().x;
-                vertices[verticesIndex++] = (float) vertex.getPosition().y;
-                vertices[verticesIndex++] = (float) vertex.getPosition().z;
+            for (Vector3d vertex : face.getVertices()) {
+                vertices[verticesIndex++] = (float) vertex.x;
+                vertices[verticesIndex++] = (float) vertex.y;
+                vertices[verticesIndex++] = (float) vertex.z;
 
                 vertices[verticesIndex++] = 1.0f;
                 vertices[verticesIndex++] = 0.0f;
                 vertices[verticesIndex++] = 0.0f;
 
-                vertices[verticesIndex++] = (float) vertex.getNormal().x;
-                vertices[verticesIndex++] = (float) vertex.getNormal().y;
-                vertices[verticesIndex++] = (float) vertex.getNormal().z;
+                vertices[verticesIndex++] = (float) face.getDirection().getNormal().x;
+                vertices[verticesIndex++] = (float) face.getDirection().getNormal().y;
+                vertices[verticesIndex++] = (float) face.getDirection().getNormal().z;
             }
         }
 

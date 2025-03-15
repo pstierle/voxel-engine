@@ -1,9 +1,9 @@
 package voxelengine.util;
 
+import org.joml.Vector3d;
 import voxelengine.util.voxel.Color;
 import voxelengine.util.voxel.Voxel;
 import voxelengine.util.voxel.VoxelFace;
-import voxelengine.util.voxel.VoxelFaceVertex;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -46,11 +46,11 @@ public class Chunk {
     private FloatBuffer verticesBuffer;
     private IntBuffer indicesBuffer;
     private float[][] heightMapData;
-    private Color[][][] nbtData;
+    private Integer[][][] nbtData;
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
     private Map<Direction, float[][]> neighborHeightMap;
-    private Map<Direction, Color[][][]> neighborNbtData;
+    private Map<Direction, Integer[][][]> neighborNbtData;
 
     public int getXOffset() {
         return xOffset;
@@ -92,7 +92,7 @@ public class Chunk {
         return needsBufferLoad;
     }
 
-    public Color[][][] getNbtData() {
+    public Integer[][][] getNbtData() {
         return nbtData;
     }
 
@@ -100,7 +100,7 @@ public class Chunk {
         return heightMapData;
     }
 
-    public void setNeighborNbtData(Map<Direction, Color[][][]> neighborNbtData) {
+    public void setNeighborNbtData(Map<Direction, Integer[][][]> neighborNbtData) {
         this.neighborNbtData = neighborNbtData;
     }
 
@@ -108,7 +108,7 @@ public class Chunk {
         this.neighborHeightMap = neighborHeightMap;
     }
 
-    public void setNbtData(Color[][][] nbtData) {
+    public void setNbtData(Integer[][][] nbtData) {
         this.nbtData = nbtData;
     }
 
@@ -135,25 +135,22 @@ public class Chunk {
         this.setupBuffers();
         float sandLevel = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
         float mountainLevel = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
-        float snowLevel = Constants.NOISE_CHUNK_MAX_Y * 0.8f;
         int verticesIndex = 0;
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
                 int maxHeight = (int) Math.ceil(heightMapData[x][z]);
                 for (int y = 0; y <= maxHeight; y++) {
-                    Color color;
+                    int colorIndex;
                     if (y <= 0) {
-                        color = new Color(0.1f, 0.3f, 0.8f);
+                        colorIndex = ColorUtil.WATER_COLOR_INDEX;
                     } else if (y <= sandLevel) {
-                        color = new Color(0.95f, 0.87f, 0.7f);
+                        colorIndex = ColorUtil.SAND_COLOR_INDEX;
                     } else if (y <= mountainLevel) {
-                        color = new Color(0.55f, 0.55f, 0.55f);
-                    } else if (y <= snowLevel) {
-                        color = new Color(0.6f, 0.6f, 0.6f);
+                        colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX;
                     } else {
-                        color = new Color(0.95f, 0.95f, 0.95f);
+                        colorIndex = ColorUtil.SNOW_COLOR_INDEX;
                     }
-                    verticesIndex = this.loadFaces(verticesIndex, color, x, y, z);
+                    verticesIndex = this.loadFaces(verticesIndex, colorIndex, x, y, z);
                 }
             }
         }
@@ -166,11 +163,10 @@ public class Chunk {
         for (int x = 0; x < this.xSize; x++) {
             for (int y = 0; y < this.ySize; y++) {
                 for (int z = 0; z < this.zSize; z++) {
-                    Color color = nbtData[x][y][z];
-                    if (color == null) {
+                    if (nbtData[x][y][z] == null) {
                         continue;
                     }
-                    verticesIndex = this.loadFaces(verticesIndex, color, x, y, z);
+                    verticesIndex = this.loadFaces(verticesIndex, nbtData[x][y][z], x, y, z);
                 }
             }
         }
@@ -189,19 +185,30 @@ public class Chunk {
         glBindVertexArray(this.vaoId);
         glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
 
-        glBufferData(GL_ARRAY_BUFFER, verticesBuffer.flip(), GL_STATIC_DRAW);
-
         if (this.needsAttributeLoad) {
-            glVertexAttribPointer(0, 3, GL_FLOAT, false, 9 * Float.BYTES, 0);
-            glEnableVertexAttribArray(0);
+            if (Constants.OPTIMIZATION_SHADER_MEMORY) {
+                glVertexAttribPointer(0, 3, GL_FLOAT, false, this.getVoxelFloatPerVertex() * Float.BYTES, 0);
+                glEnableVertexAttribArray(0);
 
-            glVertexAttribPointer(1, 3, GL_FLOAT, false, 9 * Float.BYTES, 3 * Float.BYTES);
-            glEnableVertexAttribArray(1);
+                glVertexAttribPointer(1, 1, GL_FLOAT, false, this.getVoxelFloatPerVertex() * Float.BYTES, 3 * Float.BYTES);
+                glEnableVertexAttribArray(1);
 
-            glVertexAttribPointer(2, 3, GL_FLOAT, false, 9 * Float.BYTES, 6 * Float.BYTES);
-            glEnableVertexAttribArray(2);
+                glVertexAttribPointer(2, 1, GL_FLOAT, false, this.getVoxelFloatPerVertex() * Float.BYTES, 4 * Float.BYTES);
+                glEnableVertexAttribArray(2);
+            } else {
+                glVertexAttribPointer(0, 3, GL_FLOAT, false, this.getVoxelFloatPerVertex() * Float.BYTES, 0);
+                glEnableVertexAttribArray(0);
+
+                glVertexAttribPointer(1, 3, GL_FLOAT, false, this.getVoxelFloatPerVertex() * Float.BYTES, 3 * Float.BYTES);
+                glEnableVertexAttribArray(1);
+
+                glVertexAttribPointer(2, 3, GL_FLOAT, false, this.getVoxelFloatPerVertex() * Float.BYTES, 6 * Float.BYTES);
+                glEnableVertexAttribArray(2);
+            }
             this.needsAttributeLoad = false;
         }
+
+        glBufferData(GL_ARRAY_BUFFER, verticesBuffer.flip(), GL_STATIC_DRAW);
 
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
@@ -231,32 +238,36 @@ public class Chunk {
         }
         return this.numVoxels * Constants.VOXEL_FACES_COUNT
                 * voxelFaceVerticesCount
-                * Constants.VOXEL_FLOAT_PER_VERTEX;
+                * this.getVoxelFloatPerVertex();
     }
 
-    private int loadFaces(int voxelVerticesStart, Color color, int x, int y, int z) {
+    private int loadFaces(int voxelVerticesStart, int colorIndex, int x, int y, int z) {
         int verticesIndex = voxelVerticesStart;
         for (VoxelFace face : this.baseVoxel.getFaces()) {
-            if (Constants.OPTIMIZATION_FILTER_FACES && Constants.WORLD_NBT ? this.skipFaceNbt(face.getDirection(), x, y, z) : this.skipFaceHeightMap(face.getDirection(), x, y, z)) {
-                continue;
+            if (Constants.OPTIMIZATION_FILTER_FACES) {
+                if (Constants.WORLD_NBT) {
+                    if (this.skipFaceNbt(face.getDirection(), x, y, z)) {
+                        continue;
+                    }
+                } else {
+                    if (this.skipFaceHeightMap(face.getDirection(), x, y, z)) {
+                        continue;
+                    }
+                }
             }
-            int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / Constants.VOXEL_FLOAT_PER_VERTEX;
-            for (VoxelFaceVertex vertex : face.getVertices()) {
+            int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / this.getVoxelFloatPerVertex();
+            for (Vector3d vertex : face.getVertices()) {
                 verticesIndex = this.addFaceVertices(
                         verticesIndex,
-                        (float) vertex.getPosition().x + this.xOffset + x,
-                        (float) vertex.getPosition().y + this.yOffset + y,
-                        (float) vertex.getPosition().z + this.zOffset + z,
-                        color.getR(),
-                        color.getG(),
-                        color.getB(),
-                        (float) vertex.getNormal().x,
-                        (float) vertex.getNormal().y,
-                        (float) vertex.getNormal().z
+                        (float) vertex.x + this.xOffset + x,
+                        (float) vertex.y + this.yOffset + y,
+                        (float) vertex.z + this.zOffset + z,
+                        colorIndex,
+                        face
                 );
             }
             if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
-                int baseOffset = voxelVerticesStart / Constants.VOXEL_FLOAT_PER_VERTEX;
+                int baseOffset = voxelVerticesStart / this.getVoxelFloatPerVertex();
                 for (Integer index : face.getIndices()) {
                     int localIndex = index
                             % face.getVertices().size();
@@ -308,42 +319,42 @@ public class Chunk {
                 if (z + 1 < this.zSize) {
                     return this.nbtData[x][y][z + 1] != null;
                 } else {
-                    Color[][][] checkData = neighborNbtData.get(Direction.FRONT);
+                    Integer[][][] checkData = neighborNbtData.get(Direction.FRONT);
                     return checkData != null && checkData[x][y][0] != null;
                 }
             case BACK:
                 if (z - 1 >= 0) {
                     return this.nbtData[x][y][z - 1] != null;
                 } else {
-                    Color[][][] checkData = neighborNbtData.get(Direction.BACK);
+                    Integer[][][] checkData = neighborNbtData.get(Direction.BACK);
                     return checkData != null && checkData[x][y][this.zSize - 1] != null;
                 }
             case LEFT:
                 if (x - 1 >= 0) {
                     return this.nbtData[x - 1][y][z] != null;
                 } else {
-                    Color[][][] checkData = neighborNbtData.get(Direction.LEFT);
+                    Integer[][][] checkData = neighborNbtData.get(Direction.LEFT);
                     return checkData != null && checkData[this.xSize - 1][y][z] != null;
                 }
             case RIGHT:
                 if (x + 1 < this.xSize) {
                     return this.nbtData[x + 1][y][z] != null;
                 } else {
-                    Color[][][] checkData = neighborNbtData.get(Direction.RIGHT);
+                    Integer[][][] checkData = neighborNbtData.get(Direction.RIGHT);
                     return checkData != null && checkData[0][y][z] != null;
                 }
             case TOP:
                 if (y + 1 < this.ySize) {
                     return this.nbtData[x][y + 1][z] != null;
                 } else {
-                    Color[][][] checkData = neighborNbtData.get(Direction.TOP);
+                    Integer[][][] checkData = neighborNbtData.get(Direction.TOP);
                     return checkData != null && checkData[x][0][z] != null;
                 }
             case BOTTOM:
                 if (y - 1 >= 0) {
                     return this.nbtData[x][y - 1] != null;
                 } else {
-                    Color[][][] checkData = neighborNbtData.get(Direction.BOTTOM);
+                    Integer[][][] checkData = neighborNbtData.get(Direction.BOTTOM);
                     return checkData != null && checkData[x][this.ySize - 1][z] != null;
                 }
         }
@@ -397,19 +408,34 @@ public class Chunk {
         }
     }
 
-    private int addFaceVertices(int index, float x, float y, float z, float r, float g, float b, float normalX, float normalY, float normalZ) {
+    private int addFaceVertices(int index, float x, float y, float z, int colorIndex, VoxelFace face) {
         this.verticesBuffer.put(x);
         this.verticesBuffer.put(y);
         this.verticesBuffer.put(z);
 
-        this.verticesBuffer.put(r);
-        this.verticesBuffer.put(g);
-        this.verticesBuffer.put(b);
+        if (Constants.OPTIMIZATION_SHADER_MEMORY) {
+            this.verticesBuffer.put((float) colorIndex);
+            this.verticesBuffer.put((float) face.getDirection().getIndex());
+        } else {
+            Color color;
+            if (Constants.WORLD_NBT) {
+                color = ColorUtil.nbtColors.get(colorIndex);
+            } else {
+                color = ColorUtil.noiseColors.get(colorIndex);
+            }
 
-        this.verticesBuffer.put(normalX);
-        this.verticesBuffer.put(normalY);
-        this.verticesBuffer.put(normalZ);
+            this.verticesBuffer.put(color.getR());
+            this.verticesBuffer.put(color.getG());
+            this.verticesBuffer.put(color.getB());
 
-        return index + 9;
+            this.verticesBuffer.put((float) face.getDirection().getNormal().x);
+            this.verticesBuffer.put((float) face.getDirection().getNormal().y);
+            this.verticesBuffer.put((float) face.getDirection().getNormal().z);
+        }
+        return index + this.getVoxelFloatPerVertex();
+    }
+
+    private int getVoxelFloatPerVertex() {
+        return Constants.OPTIMIZATION_SHADER_MEMORY ? Constants.VOXEL_FLOAT_PER_VERTEX_OPTIMIZATION_SHADER_MEMORY : Constants.VOXEL_FLOAT_PER_VERTEX;
     }
 }

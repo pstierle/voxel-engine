@@ -1,16 +1,17 @@
 package voxelengine.util.voxel;
 
+import org.joml.Vector3d;
 import voxelengine.util.Direction;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class VoxelFace {
-    private final List<VoxelFaceVertex> vertices;
+    private final List<Vector3d> vertices;
     private final Direction direction;
     private List<Integer> indices;
 
-    public List<VoxelFaceVertex> getVertices() {
+    public List<Vector3d> getVertices() {
         return vertices;
     }
 
@@ -29,9 +30,10 @@ public class VoxelFace {
     public VoxelFace(Direction direction, int verticesCount) {
         this.direction = direction;
         this.vertices = new ArrayList<>(verticesCount);
+
     }
 
-    public void addVertex(VoxelFaceVertex vertex) {
+    public void addVertex(Vector3d vertex) {
         vertices.add(vertex);
     }
 }

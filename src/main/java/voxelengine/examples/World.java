@@ -44,6 +44,10 @@ public class World implements BaseExample {
         } else {
             this.chunks = new CopyOnWriteArrayList<>(this.noiseUtil.loadWorld());
         }
+
+        if (Constants.OPTIMIZATION_SHADER_MEMORY) {
+            this.renderer.setColorUBO();
+        }
     }
 
     @Override

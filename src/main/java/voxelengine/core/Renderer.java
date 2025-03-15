@@ -4,13 +4,27 @@ import org.joml.Matrix4d;
 import org.joml.Vector3d;
 import org.lwjgl.BufferUtils;
 import voxelengine.examples.ExampleType;
+import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
+import voxelengine.util.Direction;
 import voxelengine.util.Log;
+import voxelengine.util.voxel.Color;
 import voxelengine.window.Window;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.glfwGetTime;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL15.glBindBuffer;
+import static org.lwjgl.opengl.GL15.glBufferData;
+import static org.lwjgl.opengl.GL15.glGenBuffers;
+import static org.lwjgl.opengl.GL30.glBindBufferBase;
+import static org.lwjgl.opengl.GL31.GL_UNIFORM_BUFFER;
+import static org.lwjgl.opengl.GL31.glGetUniformBlockIndex;
+import static org.lwjgl.opengl.GL31.glUniformBlockBinding;
 import static org.lwjgl.opengl.GL46.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL46.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL46.GL_FILL;
@@ -64,13 +78,79 @@ public class Renderer {
             Shader.loadShader(this.programId, "shaders/basic.fs", GL_FRAGMENT_SHADER);
             Shader.loadShader(this.programId, "shaders/basic.vs", GL_VERTEX_SHADER);
         } else {
-            Shader.loadShader(this.programId, "shaders/world.fs", GL_FRAGMENT_SHADER);
-            Shader.loadShader(this.programId, "shaders/world.vs", GL_VERTEX_SHADER);
+            if (Constants.OPTIMIZATION_SHADER_MEMORY) {
+                Shader.loadShader(this.programId, "shaders/world_optimized.fs", GL_FRAGMENT_SHADER);
+                Shader.loadShader(this.programId, "shaders/world_optimized.vs", GL_VERTEX_SHADER);
+            } else {
+                Shader.loadShader(this.programId, "shaders/world.fs", GL_FRAGMENT_SHADER);
+                Shader.loadShader(this.programId, "shaders/world.vs", GL_VERTEX_SHADER);
+            }
             this.viewLocation = glGetUniformLocation(this.programId, "view");
             this.projectionLocation = glGetUniformLocation(this.programId, "projection");
             this.lightPositionLocation = glGetUniformLocation(this.programId, "light_position");
             this.cameraPositionLocation = glGetUniformLocation(this.programId, "camera_position");
+
+            if (Constants.OPTIMIZATION_SHADER_MEMORY) {
+                int normalBlockIndex = glGetUniformBlockIndex(this.programId, "normalPalette");
+                glUniformBlockBinding(this.programId, normalBlockIndex, 0);
+
+                List<Direction> normalPalette = List.of(
+                        Direction.FRONT,
+                        Direction.BACK,
+                        Direction.LEFT,
+                        Direction.RIGHT,
+                        Direction.TOP,
+                        Direction.BOTTOM
+                );
+
+                FloatBuffer normalBuffer = ByteBuffer.allocateDirect(normalPalette.size() * 3 * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+                for (Direction direction : normalPalette) {
+                    normalBuffer.put((float) direction.getNormal().x).put((float) direction.getNormal().y).put((float) direction.getNormal().z);
+                }
+                normalBuffer.flip();
+
+                int normalUbo = glGenBuffers();
+                glBindBuffer(GL_UNIFORM_BUFFER, normalUbo);
+                glBufferData(GL_UNIFORM_BUFFER, normalBuffer, GL_STATIC_DRAW);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 0, normalUbo);
+            }
         }
+    }
+
+    public void setColorUBO() {
+        List<Color> colorSource;
+        if (Constants.WORLD_NBT) {
+            colorSource = ColorUtil.nbtColors;
+        } else {
+            colorSource = ColorUtil.noiseColors;
+        }
+
+        Color[] colors = new Color[250];
+        int colorIndex = 0;
+        for (int i = 0; i < 250; i++) {
+            if (i < colorSource.size()) {
+                colors[colorIndex] = colorSource.get(i);
+            } else {
+                colors[colorIndex] = new Color(0.0f, 0.0f, 0.0f);
+            }
+            colorIndex++;
+        }
+
+        int colorBlockIndex = glGetUniformBlockIndex(this.programId, "colorPalette");
+        glUniformBlockBinding(this.programId, colorBlockIndex, 1);
+
+        FloatBuffer colorBuffer = ByteBuffer.allocateDirect(colors.length * 4 * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+
+        for (int i = 0; i < 250; i++) {
+            colorBuffer.put(colors[i].getR()).put(colors[i].getG()).put(colors[i].getB()).put(1.0f);
+        }
+
+        colorBuffer.flip();
+
+        int colorUbo = glGenBuffers();
+        glBindBuffer(GL_UNIFORM_BUFFER, colorUbo);
+        glBufferData(GL_UNIFORM_BUFFER, colorBuffer, GL_STATIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, colorUbo);
     }
 
     public void update() {
