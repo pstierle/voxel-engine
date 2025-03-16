@@ -7,6 +7,7 @@ import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
 import voxelengine.util.NbtUtil;
 import voxelengine.util.NoiseUtil;
+import voxelengine.util.WorldType;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class World implements BaseExample {
     private static final long UPDATE_INTERVAL = 200_000_000;
     private final AtomicLong lastUpdateTime = new AtomicLong(0);
+    private boolean isUpdating = false;
     private final ReentrantLock chunksLock = new ReentrantLock();
 
     private Renderer renderer;
@@ -28,7 +30,6 @@ public class World implements BaseExample {
     private List<Chunk> chunks;
     private Camera camera;
     private ExecutorService threadPool;
-    private boolean isUpdating = false;
 
     @Override
     public void init(Renderer renderer, Camera camera) {
@@ -39,7 +40,7 @@ public class World implements BaseExample {
         int processorCount = Runtime.getRuntime().availableProcessors();
         threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
 
-        if (Constants.WORLD_NBT) {
+        if (Constants.WORLD_TYPE == WorldType.NBT) {
             this.chunks = new NbtUtil(renderer).loadWorld();
         } else {
             this.chunks = new CopyOnWriteArrayList<>(this.noiseUtil.loadWorld());
@@ -52,10 +53,6 @@ public class World implements BaseExample {
 
     @Override
     public void update() {
-        if (Constants.WORLD_NBT) {
-            return;
-        }
-
         long currentTime = System.nanoTime();
         if (currentTime - lastUpdateTime.get() < UPDATE_INTERVAL || isUpdating) {
             return;
@@ -66,14 +63,37 @@ public class World implements BaseExample {
 
         threadPool.submit(() -> {
             try {
-                updateChunks();
+                if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
+                    checkChunkFrustum();
+                }
+                if (Constants.WORLD_TYPE == WorldType.NOISE) {
+                    updateNoiseChunks();
+                }
             } finally {
                 isUpdating = false;
             }
         });
     }
 
-    private void updateChunks() {
+    private void checkChunkFrustum() {
+        chunksLock.lock();
+        try {
+            for (int i = 0; i < this.chunks.size(); i++) {
+                int chunkSize = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
+                int height = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_MAX_Y;
+                boolean isOnFrustum = this.camera.isOnFrustum(
+                        chunks.get(i).getXOffset(),
+                        chunks.get(i).getZOffset(),
+                        chunkSize,
+                        height);
+                chunks.get(i).setIsOnFrustum(isOnFrustum);
+            }
+        } finally {
+            chunksLock.unlock();
+        }
+    }
+
+    private void updateNoiseChunks() {
         int playerChunkX = this.camera.getChunkX();
         int playerChunkZ = this.camera.getChunkZ();
 
@@ -133,6 +153,15 @@ public class World implements BaseExample {
             chunk.setXOffset((int) position.x);
             chunk.setZOffset((int) position.y);
 
+            if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
+                boolean isOnFrustum = this.camera.isOnFrustum(
+                        chunk.getXOffset(),
+                        chunk.getZOffset(),
+                        Constants.NOISE_CHUNK_SIZE,
+                        Constants.NOISE_CHUNK_MAX_Y);
+                chunk.setIsOnFrustum(isOnFrustum);
+            }
+
             float[][] heightMap = this.noiseUtil.generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
 
             chunk.setHeightMapData(heightMap);
@@ -150,7 +179,13 @@ public class World implements BaseExample {
                 this.chunks.get(i).loadBuffers(this.renderer.getProgramId());
                 uploadedCount++;
             }
-            this.chunks.get(i).render();
+            if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
+                if (chunks.get(i).isOnFrustum()) {
+                    this.chunks.get(i).render();
+                }
+            } else {
+                this.chunks.get(i).render();
+            }
         }
     }
 

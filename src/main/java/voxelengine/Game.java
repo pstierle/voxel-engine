@@ -31,7 +31,7 @@ public class Game {
         this.window.init(camera, renderer);
         this.camera.init(renderer, window);
         this.window.init();
-        this.renderer.init(camera, window);
+        this.renderer.init();
 
         switch (Constants.WORLD_EXAMPLE) {
             case TRIANGLE_2D:

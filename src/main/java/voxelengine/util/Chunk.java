@@ -49,8 +49,17 @@ public class Chunk {
     private Integer[][][] nbtData;
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
+    private boolean isOnFrustum = true;
     private Map<Direction, float[][]> neighborHeightMap;
     private Map<Direction, Integer[][][]> neighborNbtData;
+
+    public boolean isOnFrustum() {
+        return isOnFrustum;
+    }
+
+    public void setIsOnFrustum(boolean isOnFrustum) {
+        this.isOnFrustum = isOnFrustum;
+    }
 
     public int getXOffset() {
         return xOffset;
@@ -245,7 +254,7 @@ public class Chunk {
         int verticesIndex = voxelVerticesStart;
         for (VoxelFace face : this.baseVoxel.getFaces()) {
             if (Constants.OPTIMIZATION_FILTER_FACES) {
-                if (Constants.WORLD_NBT) {
+                if (Constants.WORLD_TYPE == WorldType.NBT) {
                     if (this.skipFaceNbt(face.getDirection(), x, y, z)) {
                         continue;
                     }
@@ -394,7 +403,7 @@ public class Chunk {
 
     private void setupBuffers() {
         this.indicesCount = 0;
-        if (Constants.WORLD_NBT) {
+        if (Constants.WORLD_TYPE == WorldType.NBT) {
             this.numVoxels = this.calculateVoxelCountNbt();
         } else {
             this.numVoxels = this.calculateVoxelCountHeightMap();
@@ -418,7 +427,7 @@ public class Chunk {
             this.verticesBuffer.put((float) face.getDirection().getIndex());
         } else {
             Color color;
-            if (Constants.WORLD_NBT) {
+            if (Constants.WORLD_TYPE == WorldType.NBT) {
                 color = ColorUtil.nbtColors.get(colorIndex);
             } else {
                 color = ColorUtil.noiseColors.get(colorIndex);
