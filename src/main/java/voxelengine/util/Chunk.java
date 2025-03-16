@@ -38,19 +38,19 @@ public class Chunk {
     private final int vaoId;
     private final int eboId;
     private int xOffset;
-    private final int yOffset;
+    private int yOffset;
     private int zOffset;
 
     private int numVoxels;
     private int indicesCount;
     private FloatBuffer verticesBuffer;
     private IntBuffer indicesBuffer;
-    private float[][] heightMapData;
+    private int[][] heightMapData;
     private Integer[][][] nbtData;
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
     private boolean isOnFrustum = true;
-    private Map<Direction, float[][]> neighborHeightMap;
+    private Map<Direction, int[][]> neighborHeightMap;
     private Map<Direction, Integer[][][]> neighborNbtData;
 
     public boolean isOnFrustum() {
@@ -89,6 +89,10 @@ public class Chunk {
         this.xOffset = xOffset;
     }
 
+    public void setYOffset(int yOffset) {
+        this.yOffset = yOffset;
+    }
+
     public void setZOffset(int zOffset) {
         this.zOffset = zOffset;
     }
@@ -105,7 +109,7 @@ public class Chunk {
         return nbtData;
     }
 
-    public float[][] getHeightMapData() {
+    public int[][] getHeightMapData() {
         return heightMapData;
     }
 
@@ -113,7 +117,7 @@ public class Chunk {
         this.neighborNbtData = neighborNbtData;
     }
 
-    public void setNeighborHeightMap(Map<Direction, float[][]> neighborHeightMap) {
+    public void setNeighborHeightMap(Map<Direction, int[][]> neighborHeightMap) {
         this.neighborHeightMap = neighborHeightMap;
     }
 
@@ -121,7 +125,7 @@ public class Chunk {
         this.nbtData = nbtData;
     }
 
-    public void setHeightMapData(float[][] heightMapData) {
+    public void setHeightMapData(int[][] heightMapData) {
         this.heightMapData = heightMapData;
     }
 
@@ -147,14 +151,14 @@ public class Chunk {
         int verticesIndex = 0;
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                int maxHeight = (int) Math.ceil(heightMapData[x][z]);
+                int maxHeight = heightMapData[x][z];
                 for (int y = 0; y <= maxHeight; y++) {
                     int colorIndex;
-                    if (y <= 0) {
+                    if (y + this.yOffset <= 0) {
                         colorIndex = ColorUtil.WATER_COLOR_INDEX;
-                    } else if (y <= sandLevel) {
+                    } else if (y + this.yOffset <= sandLevel) {
                         colorIndex = ColorUtil.SAND_COLOR_INDEX;
-                    } else if (y <= mountainLevel) {
+                    } else if (y + this.yOffset <= mountainLevel) {
                         colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX;
                     } else {
                         colorIndex = ColorUtil.SNOW_COLOR_INDEX;
@@ -292,30 +296,30 @@ public class Chunk {
         switch (direction) {
             case FRONT:
                 if (z + 1 < Constants.NOISE_CHUNK_SIZE) {
-                    return y <= Math.ceil(this.heightMapData[x][z + 1]);
+                    return y <= this.heightMapData[x][z + 1];
                 } else {
-                    return y <= Math.ceil(neighborHeightMap.get(Direction.FRONT)[x][0]);
+                    return y <= neighborHeightMap.get(Direction.FRONT)[x][0];
                 }
             case BACK:
                 if (z - 1 >= 0) {
-                    return y <= Math.ceil(this.heightMapData[x][z - 1]);
+                    return y <= this.heightMapData[x][z - 1];
                 } else {
-                    return y <= Math.ceil(neighborHeightMap.get(Direction.BACK)[x][Constants.NOISE_CHUNK_SIZE - 1]);
+                    return y <= neighborHeightMap.get(Direction.BACK)[x][Constants.NOISE_CHUNK_SIZE - 1];
                 }
             case LEFT:
                 if (x - 1 >= 0) {
-                    return y <= Math.ceil(this.heightMapData[x - 1][z]);
+                    return y <= this.heightMapData[x - 1][z];
                 } else {
-                    return y <= Math.ceil(neighborHeightMap.get(Direction.LEFT)[Constants.NOISE_CHUNK_SIZE - 1][z]);
+                    return y <= neighborHeightMap.get(Direction.LEFT)[Constants.NOISE_CHUNK_SIZE - 1][z];
                 }
             case RIGHT:
                 if (x + 1 < Constants.NOISE_CHUNK_SIZE) {
-                    return y <= Math.ceil(this.heightMapData[x + 1][z]);
+                    return y <= this.heightMapData[x + 1][z];
                 } else {
-                    return y <= Math.ceil(neighborHeightMap.get(Direction.RIGHT)[0][z]);
+                    return y <= neighborHeightMap.get(Direction.RIGHT)[0][z];
                 }
             case TOP:
-                return y < Math.ceil(this.heightMapData[x][z]);
+                return y < this.heightMapData[x][z];
             case BOTTOM:
                 return true;
         }

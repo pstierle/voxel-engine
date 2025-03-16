@@ -32,8 +32,8 @@ public class NoiseUtil {
         this.camera = camera;
     }
 
-    public float[][] generateHeightMap(int chunkOffsetX, int chunkOffsetZ) {
-        float[][] heightMap = new float[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE];
+    public int[][] generateHeightMap(int chunkOffsetX, int chunkOffsetZ) {
+        int[][] heightMap = new int[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE];
 
         float mountainScale = Constants.NOISE_CHUNK_MAX_Y * 0.9f;
         float valleyScale = Constants.NOISE_CHUNK_MAX_Y * 0.1f;
@@ -80,7 +80,7 @@ public class NoiseUtil {
                 }
 
                 terrainHeight = Math.min(terrainHeight, Constants.NOISE_CHUNK_MAX_Y);
-                heightMap[x][z] = terrainHeight;
+                heightMap[x][z] = (int) Math.ceil(terrainHeight);
             }
         }
         return heightMap;
@@ -95,7 +95,7 @@ public class NoiseUtil {
         for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
                 Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
-                float[][] heightMap = generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
+                int[][] heightMap = generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
                 chunk.setHeightMapData(heightMap);
                 chunks.add(chunk);
             }
@@ -115,7 +115,7 @@ public class NoiseUtil {
     }
 
     public void updateChunkNeighbourHeightMap(List<Chunk> chunks, Chunk chunk) {
-        Map<Direction, float[][]> neighborHeightMap = new EnumMap<>(Direction.class);
+        Map<Direction, int[][]> neighborHeightMap = new EnumMap<>(Direction.class);
 
         // ignore top/bottom for noise
         neighborHeightMap.put(Direction.FRONT, null);

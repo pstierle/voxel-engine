@@ -162,7 +162,7 @@ public class World implements BaseExample {
                 chunk.setIsOnFrustum(isOnFrustum);
             }
 
-            float[][] heightMap = this.noiseUtil.generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
+            int[][] heightMap = this.noiseUtil.generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
 
             chunk.setHeightMapData(heightMap);
             this.noiseUtil.updateChunkNeighbourHeightMap(chunks, chunk);

@@ -6,7 +6,7 @@ public final class Constants {
     private Constants() {
     }
 
-    public static final WorldType WORLD_TYPE = WorldType.NBT;
+    public static final WorldType WORLD_TYPE = WorldType.NOISE;
     public static final ExampleType WORLD_EXAMPLE = ExampleType.WORLD;
 
     public static final double MOUSE_SENSITIVITY = 0.2;
@@ -24,9 +24,9 @@ public final class Constants {
     public static final boolean NBT_DEBUG = false;
     public static final String NBT_FOLDER_PATH = "world/italy";
 
-    public static final int NOISE_CHUNK_SIZE = 64;
+    public static final int NOISE_CHUNK_SIZE = 32;
     public static final int NOISE_CHUNK_MAX_Y = 320;
-    public static final int NOISE_CHUNK_RADIUS = 20;
+    public static final int NOISE_CHUNK_RADIUS = 10;
     public static final int NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME = 100;
     public static final int NOISE_WORLD_SEED = 1337;
 
