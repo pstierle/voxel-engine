@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class World implements BaseExample {
-    private static final long UPDATE_INTERVAL = 200_000_000;
+    private static final long UPDATE_INTERVAL = 500_000_000;
     private final AtomicLong lastUpdateTime = new AtomicLong(0);
     private boolean isUpdating = false;
     private final ReentrantLock chunksLock = new ReentrantLock();
