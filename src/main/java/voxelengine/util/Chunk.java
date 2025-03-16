@@ -12,20 +12,9 @@ import java.nio.IntBuffer;
 import java.util.EnumMap;
 import java.util.Map;
 
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
-import static org.lwjgl.opengl.GL11.glDrawArrays;
-import static org.lwjgl.opengl.GL11.glDrawElements;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL15.glBufferData;
-import static org.lwjgl.opengl.GL15.glGenBuffers;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glUseProgram;
-import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
@@ -49,17 +38,8 @@ public class Chunk {
     private Integer[][][] nbtData;
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
-    private boolean isOnFrustum = true;
     private Map<Direction, int[][]> neighborHeightMap;
     private Map<Direction, Integer[][][]> neighborNbtData;
-
-    public boolean isOnFrustum() {
-        return isOnFrustum;
-    }
-
-    public void setIsOnFrustum(boolean isOnFrustum) {
-        this.isOnFrustum = isOnFrustum;
-    }
 
     public int getXOffset() {
         return xOffset;
@@ -154,7 +134,7 @@ public class Chunk {
                 int maxHeight = heightMapData[x][z];
                 for (int y = 0; y <= maxHeight; y++) {
                     int colorIndex;
-                    if (y + this.yOffset <= 0) {
+                    if (y + this.yOffset <= 10) {
                         colorIndex = ColorUtil.WATER_COLOR_INDEX;
                     } else if (y + this.yOffset <= sandLevel) {
                         colorIndex = ColorUtil.SAND_COLOR_INDEX;

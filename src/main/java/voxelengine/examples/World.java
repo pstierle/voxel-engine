@@ -1,18 +1,10 @@
 package voxelengine.examples;
 
-import org.joml.Vector2d;
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
-import voxelengine.util.Chunk;
-import voxelengine.util.Constants;
-import voxelengine.util.NbtUtil;
-import voxelengine.util.NoiseUtil;
-import voxelengine.util.WorldType;
+import voxelengine.util.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,9 +55,6 @@ public class World implements BaseExample {
 
         threadPool.submit(() -> {
             try {
-                if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
-                    checkChunkFrustum();
-                }
                 if (Constants.WORLD_TYPE == WorldType.NOISE) {
                     updateNoiseChunks();
                 }
@@ -75,94 +64,55 @@ public class World implements BaseExample {
         });
     }
 
-    private void checkChunkFrustum() {
-        chunksLock.lock();
-        try {
-            for (int i = 0; i < this.chunks.size(); i++) {
-                int chunkSize = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
-                int height = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_MAX_Y;
-                boolean isOnFrustum = this.camera.isOnFrustum(
-                        chunks.get(i).getXOffset(),
-                        chunks.get(i).getZOffset(),
-                        chunkSize,
-                        height);
-                chunks.get(i).setIsOnFrustum(isOnFrustum);
-            }
-        } finally {
-            chunksLock.unlock();
-        }
-    }
-
     private void updateNoiseChunks() {
         int playerChunkX = this.camera.getChunkX();
         int playerChunkZ = this.camera.getChunkZ();
-
-        Set<Vector2d> visibleChunkPositions = new HashSet<>();
         int radius = Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE;
+        int chunkSize = Constants.NOISE_CHUNK_SIZE;
 
-        for (int dx = playerChunkX - radius; dx <= playerChunkX + radius; dx += Constants.NOISE_CHUNK_SIZE) {
-            for (int dz = playerChunkZ - radius; dz <= playerChunkZ + radius; dz += Constants.NOISE_CHUNK_SIZE) {
-                visibleChunkPositions.add(new Vector2d(dx, dz));
+        Set<ChunkPosition> visibleChunkPositions = new HashSet<>();
+        for (int dx = playerChunkX - radius; dx <= playerChunkX + radius; dx += chunkSize) {
+            for (int dz = playerChunkZ - radius; dz <= playerChunkZ + radius; dz += chunkSize) {
+                visibleChunkPositions.add(new ChunkPosition(dx, dz));
             }
         }
 
+        Map<ChunkPosition, Chunk> visibleChunksMap = new HashMap<>();
         List<Chunk> chunksToUpdate = new ArrayList<>();
-        List<Chunk> visibleChunks = new ArrayList<>();
 
         chunksLock.lock();
         try {
-            for (int i = 0; i < this.chunks.size(); i++) {
-                Vector2d pos = new Vector2d(chunks.get(i).getXOffset(), chunks.get(i).getZOffset());
-                if (!visibleChunkPositions.contains(pos)) {
-                    chunksToUpdate.add(chunks.get(i));
+            for (Chunk chunk : this.chunks) {
+                ChunkPosition pos = new ChunkPosition(chunk.getXOffset(), chunk.getZOffset());
+                if (visibleChunkPositions.contains(pos)) {
+                    visibleChunksMap.put(pos, chunk);
                 } else {
-                    visibleChunks.add(chunks.get(i));
+                    chunksToUpdate.add(chunk);
                 }
             }
         } finally {
             chunksLock.unlock();
         }
 
-        List<Vector2d> positionsToAdd = new ArrayList<>();
-
-        for (Vector2d pos : visibleChunkPositions) {
-            boolean chunkExists = false;
-            for (Chunk chunk : visibleChunks) {
-                if (chunk.getXOffset() == (int) pos.x && chunk.getZOffset() == (int) pos.y) {
-                    chunkExists = true;
-                    break;
-                }
-            }
-
-            if (!chunkExists) {
+        List<ChunkPosition> positionsToAdd = new ArrayList<>();
+        for (ChunkPosition pos : visibleChunkPositions) {
+            if (!visibleChunksMap.containsKey(pos)) {
                 positionsToAdd.add(pos);
             }
         }
 
-        positionsToAdd.sort((a, b) -> {
-            double distA = Math.sqrt(Math.pow(a.x - playerChunkX, 2) + Math.pow(a.y - playerChunkZ, 2));
-            double distB = Math.sqrt(Math.pow(b.x - playerChunkX, 2) + Math.pow(b.y - playerChunkZ, 2));
-            return Double.compare(distA, distB);
-        });
+        positionsToAdd.sort(Comparator.comparingDouble(pos ->
+                Math.sqrt(Math.pow(pos.x - playerChunkX, 2) + Math.pow(pos.z - playerChunkZ, 2))));
 
         int updateCount = Math.min(positionsToAdd.size(), chunksToUpdate.size());
         for (int i = 0; i < updateCount; i++) {
             Chunk chunk = chunksToUpdate.get(i);
-            Vector2d position = positionsToAdd.get(i);
+            ChunkPosition position = positionsToAdd.get(i);
 
-            chunk.setXOffset((int) position.x);
-            chunk.setZOffset((int) position.y);
+            chunk.setXOffset(position.x);
+            chunk.setZOffset(position.z);
 
-            if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
-                boolean isOnFrustum = this.camera.isOnFrustum(
-                        chunk.getXOffset(),
-                        chunk.getZOffset(),
-                        Constants.NOISE_CHUNK_SIZE,
-                        Constants.NOISE_CHUNK_MAX_Y);
-                chunk.setIsOnFrustum(isOnFrustum);
-            }
-
-            int[][] heightMap = this.noiseUtil.generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
+            int[][] heightMap = this.noiseUtil.generateHeightMap(position.x, position.z);
 
             chunk.setHeightMapData(heightMap);
             this.noiseUtil.updateChunkNeighbourHeightMap(chunks, chunk);
@@ -171,16 +121,44 @@ public class World implements BaseExample {
         }
     }
 
+    private static class ChunkPosition {
+        final int x;
+        final int z;
+
+        ChunkPosition(int x, int z) {
+            this.x = x;
+            this.z = z;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ChunkPosition that = (ChunkPosition) o;
+            return x == that.x && z == that.z;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, z);
+        }
+    }
+
     @Override
     public void render() {
-        int uploadedCount = 0;
         for (int i = 0; i < this.chunks.size(); i++) {
-            if (this.chunks.get(i).needsBufferLoad() && uploadedCount < Constants.NOISE_CHUNK_BUFFER_UPLOADS_PER_FRAME) {
+            if (this.chunks.get(i).needsBufferLoad()) {
                 this.chunks.get(i).loadBuffers(this.renderer.getProgramId());
-                uploadedCount++;
             }
             if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
-                if (chunks.get(i).isOnFrustum()) {
+                int chunkSize = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
+                int height = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_MAX_Y;
+                boolean isOnFrustum = this.camera.isOnFrustum(
+                        chunks.get(i).getXOffset(),
+                        chunks.get(i).getZOffset(),
+                        chunkSize,
+                        height);
+                if (isOnFrustum) {
                     this.chunks.get(i).render();
                 }
             } else {
