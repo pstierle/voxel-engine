@@ -8,6 +8,7 @@ import dev.dewy.nbt.tags.collection.ListTag;
 import dev.dewy.nbt.tags.primitive.IntTag;
 import dev.dewy.nbt.tags.primitive.StringTag;
 import voxelengine.core.Renderer;
+import voxelengine.examples.World;
 import voxelengine.util.voxel.Color;
 
 import java.io.File;
@@ -30,7 +31,7 @@ public class NbtUtil {
         this.renderer = renderer;
     }
 
-    public List<Chunk> loadWorld() {
+    public void loadWorld() {
         List<Chunk> chunks = new ArrayList<>();
 
         if (Constants.NBT_DEBUG) {
@@ -38,7 +39,7 @@ public class NbtUtil {
 
             for (int dx = 0; dx < 4; dx++) {
                 for (int dz = 0; dz < 4; dz++) {
-                    Chunk chunk = new Chunk(dx * Constants.NBT_CHUNK_SIZE, 0, dz * Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);
+                    Chunk chunk = new Chunk(dx * Constants.NBT_CHUNK_SIZE, 0, dz * Constants.NBT_CHUNK_SIZE);
                     Integer[][][] data = new Integer[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
                     for (int x = 0; x < Constants.NBT_CHUNK_SIZE; x++) {
                         for (int y = 0; y < Constants.NBT_CHUNK_SIZE; y++) {
@@ -47,7 +48,7 @@ public class NbtUtil {
                             }
                         }
                     }
-                    chunk.setNbtData(data);
+                    chunk.setData(data);
                     chunks.add(chunk);
                 }
             }
@@ -92,7 +93,7 @@ public class NbtUtil {
                         }
 
                         int[] chunkOffset = parseChunkOffset(entry.getFileName().toString());
-                        Chunk chunk = new Chunk(chunkOffset[0], chunkOffset[1], chunkOffset[2], Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE, Constants.NBT_CHUNK_SIZE);
+                        Chunk chunk = new Chunk(chunkOffset[0], chunkOffset[1], chunkOffset[2]);
                         Integer[][][] data = new Integer[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
                         ListTag<Tag> blocksTag = compoundTag.getList("blocks");
                         int voxelCount = 0;
@@ -109,7 +110,7 @@ public class NbtUtil {
                             voxelCount++;
                         }
                         if (voxelCount > 0) {
-                            chunk.setNbtData(data);
+                            chunk.setData(data);
                             chunks.add(chunk);
                         }
                     }
@@ -120,36 +121,36 @@ public class NbtUtil {
         }
 
         for (Chunk chunk : chunks) {
-            Map<Direction, Integer[][][]> neighborNbtData = new EnumMap<>(Direction.class);
+            Map<Direction, Integer> neighborChunkIds = new EnumMap<>(Direction.class);
             for (Chunk neighbourChunk : chunks) {
                 Direction neighborDirection = null;
-                if (neighbourChunk.getZOffset() == chunk.getZOffset() + chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {
+                if (neighbourChunk.getZOffset() == chunk.getZOffset() + Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset()) {
                     neighborDirection = Direction.FRONT;
-                } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {
+                } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset()) {
                     neighborDirection = Direction.BACK;
-                } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + chunk.getXSize() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + Constants.NBT_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset()) {
                     neighborDirection = Direction.RIGHT;
-                } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - chunk.getXSize() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - Constants.NBT_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset()) {
                     neighborDirection = Direction.LEFT;
-                } else if (neighbourChunk.getYOffset() == chunk.getYOffset() + chunk.getYSize() && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                } else if (neighbourChunk.getYOffset() == chunk.getYOffset() + Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
                     neighborDirection = Direction.TOP;
-                } else if (neighbourChunk.getYOffset() == chunk.getYOffset() - chunk.getYSize() && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                } else if (neighbourChunk.getYOffset() == chunk.getYOffset() - Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
                     neighborDirection = Direction.BOTTOM;
                 }
                 if (neighborDirection != null) {
-                    neighborNbtData.put(neighborDirection, neighbourChunk.getNbtData());
+                    neighborChunkIds.put(neighborDirection, neighbourChunk.getId());
                 }
             }
-            chunk.setNeighborNbtData(neighborNbtData);
+            chunk.setNeighborChunkIds(neighborChunkIds);
         }
+
+        World.chunks.addAll(chunks);
 
         for (int i = 0; i < chunks.size(); i++) {
             Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
-            chunks.get(i).loadDataNbt();
+            chunks.get(i).loadData();
             chunks.get(i).loadBuffers(this.renderer.getProgramId());
         }
-
-        return chunks;
     }
 
     public static int[] parseChunkOffset(String input) {

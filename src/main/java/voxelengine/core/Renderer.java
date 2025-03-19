@@ -6,7 +6,6 @@ import voxelengine.examples.ExampleType;
 import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
 import voxelengine.util.Direction;
-import voxelengine.util.Log;
 import voxelengine.util.WorldType;
 import voxelengine.util.voxel.Color;
 
@@ -50,6 +49,12 @@ public class Renderer {
     private int projectionLocation;
     private int lightPositionLocation;
     private int cameraPositionLocation;
+
+    private final Statistic statistic;
+
+    public Renderer(Statistic statistic) {
+        this.statistic = statistic;
+    }
 
     public int getProgramId() {
         return programId;
@@ -174,7 +179,7 @@ public class Renderer {
         double lastFpsTime = currentFrameTime - this.fpsTimer;
 
         if (lastFpsTime >= 1) {
-            Log.info("FPS: " + this.frameCount);
+            this.statistic.setFps(this.frameCount);
             this.fpsTimer = currentFrameTime;
             this.frameCount = 0;
         }

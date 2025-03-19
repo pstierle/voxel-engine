@@ -1,6 +1,7 @@
 package voxelengine.util;
 
 import org.joml.Vector3d;
+import voxelengine.examples.World;
 import voxelengine.util.voxel.Color;
 import voxelengine.util.voxel.Voxel;
 import voxelengine.util.voxel.VoxelFace;
@@ -9,23 +10,33 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.EnumMap;
 import java.util.Map;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
+import static org.lwjgl.opengl.GL11.glDrawArrays;
+import static org.lwjgl.opengl.GL11.glDrawElements;
+import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL15.glBindBuffer;
+import static org.lwjgl.opengl.GL15.glBufferData;
+import static org.lwjgl.opengl.GL15.glGenBuffers;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glUseProgram;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Chunk {
+    public static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
+    private static int nextId = 0;
+    private int id;
     private final Voxel baseVoxel = new Voxel();
-    private final int xSize;
-    private final int ySize;
-    private final int zSize;
-    private final int vboId;
-    private final int vaoId;
-    private final int eboId;
+    private int vboId;
+    private int vaoId;
+    private int eboId;
     private int xOffset;
     private int yOffset;
     private int zOffset;
@@ -34,12 +45,14 @@ public class Chunk {
     private int indicesCount;
     private FloatBuffer verticesBuffer;
     private IntBuffer indicesBuffer;
-    private int[][] heightMapData;
-    private Integer[][][] nbtData;
+    private Integer[][][] data;
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
-    private Map<Direction, int[][]> neighborHeightMap;
-    private Map<Direction, Integer[][][]> neighborNbtData;
+    private Map<Direction, Integer> neighborChunkIds;
+
+    public int getId() {
+        return id;
+    }
 
     public int getXOffset() {
         return xOffset;
@@ -51,18 +64,6 @@ public class Chunk {
 
     public int getZOffset() {
         return zOffset;
-    }
-
-    public int getZSize() {
-        return zSize;
-    }
-
-    public int getXSize() {
-        return xSize;
-    }
-
-    public int getYSize() {
-        return ySize;
     }
 
     public void setXOffset(int xOffset) {
@@ -85,81 +86,35 @@ public class Chunk {
         return needsBufferLoad;
     }
 
-    public Integer[][][] getNbtData() {
-        return nbtData;
+    public void setData(Integer[][][] data) {
+        this.data = data;
     }
 
-    public int[][] getHeightMapData() {
-        return heightMapData;
+    public Integer[][][] getData() {
+        return data;
     }
 
-    public void setNeighborNbtData(Map<Direction, Integer[][][]> neighborNbtData) {
-        this.neighborNbtData = neighborNbtData;
+    public void setNeighborChunkIds(Map<Direction, Integer> neighborChunkIds) {
+        this.neighborChunkIds = neighborChunkIds;
     }
 
-    public void setNeighborHeightMap(Map<Direction, int[][]> neighborHeightMap) {
-        this.neighborHeightMap = neighborHeightMap;
-    }
-
-    public void setNbtData(Integer[][][] nbtData) {
-        this.nbtData = nbtData;
-    }
-
-    public void setHeightMapData(int[][] heightMapData) {
-        this.heightMapData = heightMapData;
-    }
-
-    public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ, int xSize, int ySize, int zSize) {
+    public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ) {
+        this.id = nextId++;
         this.xOffset = chunkOffsetX;
         this.yOffset = chunkOffsetY;
         this.zOffset = chunkOffsetZ;
-        this.xSize = xSize;
-        this.ySize = ySize;
-        this.zSize = zSize;
-        this.vboId = glGenBuffers();
-        this.vaoId = glGenVertexArrays();
-        this.eboId = glGenBuffers();
-        this.neighborHeightMap = new EnumMap<>(Direction.class);
-        this.neighborNbtData = new EnumMap<>(Direction.class);
     }
 
-
-    public void loadDataHeightMap() {
-        this.setupBuffers();
-        float sandLevel = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
-        float mountainLevel = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
-        int verticesIndex = 0;
-        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
-            for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                int maxHeight = heightMapData[x][z];
-                for (int y = 0; y <= maxHeight; y++) {
-                    int colorIndex;
-                    if (y + this.yOffset <= 10) {
-                        colorIndex = ColorUtil.WATER_COLOR_INDEX;
-                    } else if (y + this.yOffset <= sandLevel) {
-                        colorIndex = ColorUtil.SAND_COLOR_INDEX;
-                    } else if (y + this.yOffset <= mountainLevel) {
-                        colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX;
-                    } else {
-                        colorIndex = ColorUtil.SNOW_COLOR_INDEX;
-                    }
-                    verticesIndex = this.loadFaces(verticesIndex, colorIndex, x, y, z);
-                }
-            }
-        }
-        this.neighborHeightMap = null;
-    }
-
-    public void loadDataNbt() {
+    public void loadData() {
         this.setupBuffers();
         int verticesIndex = 0;
-        for (int x = 0; x < this.xSize; x++) {
-            for (int y = 0; y < this.ySize; y++) {
-                for (int z = 0; z < this.zSize; z++) {
-                    if (nbtData[x][y][z] == null) {
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int y = 0; y < CHUNK_SIZE; y++) {
+                for (int z = 0; z < CHUNK_SIZE; z++) {
+                    if (this.data[x][y][z] == null) {
                         continue;
                     }
-                    verticesIndex = this.loadFaces(verticesIndex, nbtData[x][y][z], x, y, z);
+                    verticesIndex = this.loadFaces(verticesIndex, this.data[x][y][z], x, y, z);
                 }
             }
         }
@@ -171,6 +126,12 @@ public class Chunk {
         }
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING && this.indicesBuffer == null) {
             return;
+        }
+
+        if (this.needsAttributeLoad) {
+            this.vboId = glGenBuffers();
+            this.vaoId = glGenVertexArrays();
+            this.eboId = glGenBuffers();
         }
 
         glUseProgram(programId);
@@ -238,14 +199,8 @@ public class Chunk {
         int verticesIndex = voxelVerticesStart;
         for (VoxelFace face : this.baseVoxel.getFaces()) {
             if (Constants.OPTIMIZATION_FILTER_FACES) {
-                if (Constants.WORLD_TYPE == WorldType.NBT) {
-                    if (this.skipFaceNbt(face.getDirection(), x, y, z)) {
-                        continue;
-                    }
-                } else {
-                    if (this.skipFaceHeightMap(face.getDirection(), x, y, z)) {
-                        continue;
-                    }
+                if (this.skipFace(face.getDirection(), x, y, z)) {
+                    continue;
                 }
             }
             int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / this.getVoxelFloatPerVertex();
@@ -272,95 +227,119 @@ public class Chunk {
         return verticesIndex;
     }
 
-    private boolean skipFaceHeightMap(Direction direction, int x, int y, int z) {
-        switch (direction) {
-            case FRONT:
-                if (z + 1 < Constants.NOISE_CHUNK_SIZE) {
-                    return y <= this.heightMapData[x][z + 1];
-                } else {
-                    return y <= neighborHeightMap.get(Direction.FRONT)[x][0];
-                }
-            case BACK:
-                if (z - 1 >= 0) {
-                    return y <= this.heightMapData[x][z - 1];
-                } else {
-                    return y <= neighborHeightMap.get(Direction.BACK)[x][Constants.NOISE_CHUNK_SIZE - 1];
-                }
-            case LEFT:
-                if (x - 1 >= 0) {
-                    return y <= this.heightMapData[x - 1][z];
-                } else {
-                    return y <= neighborHeightMap.get(Direction.LEFT)[Constants.NOISE_CHUNK_SIZE - 1][z];
-                }
-            case RIGHT:
-                if (x + 1 < Constants.NOISE_CHUNK_SIZE) {
-                    return y <= this.heightMapData[x + 1][z];
-                } else {
-                    return y <= neighborHeightMap.get(Direction.RIGHT)[0][z];
-                }
-            case TOP:
-                return y < this.heightMapData[x][z];
-            case BOTTOM:
-                return true;
-        }
-        return false;
-    }
 
-    private boolean skipFaceNbt(Direction direction, int x, int y, int z) {
+    private boolean skipFace(Direction direction, int x, int y, int z) {
         switch (direction) {
             case FRONT:
-                if (z + 1 < this.zSize) {
-                    return this.nbtData[x][y][z + 1] != null;
+                if (z + 1 < CHUNK_SIZE) {
+                    return this.data[x][y][z + 1] != null;
                 } else {
-                    Integer[][][] checkData = neighborNbtData.get(Direction.FRONT);
+                    Integer neighborId = this.neighborChunkIds.get(Direction.FRONT);
+                    if (neighborId == null) {
+                        return false;
+                    }
+                    Chunk neighborChunk = findChunkById(neighborId);
+                    if (neighborChunk == null) {
+                        return false;
+                    }
+                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[x][y][0] != null;
                 }
             case BACK:
                 if (z - 1 >= 0) {
-                    return this.nbtData[x][y][z - 1] != null;
+                    return this.data[x][y][z - 1] != null;
                 } else {
-                    Integer[][][] checkData = neighborNbtData.get(Direction.BACK);
-                    return checkData != null && checkData[x][y][this.zSize - 1] != null;
+                    Integer neighborId = this.neighborChunkIds.get(Direction.BACK);
+                    if (neighborId == null) {
+                        return false;
+                    }
+                    Chunk neighborChunk = findChunkById(neighborId);
+                    if (neighborChunk == null) {
+                        return false;
+                    }
+                    Integer[][][] checkData = neighborChunk.getData();
+                    return checkData != null && checkData[x][y][CHUNK_SIZE - 1] != null;
                 }
             case LEFT:
                 if (x - 1 >= 0) {
-                    return this.nbtData[x - 1][y][z] != null;
+                    return this.data[x - 1][y][z] != null;
                 } else {
-                    Integer[][][] checkData = neighborNbtData.get(Direction.LEFT);
-                    return checkData != null && checkData[this.xSize - 1][y][z] != null;
+                    Integer neighborId = this.neighborChunkIds.get(Direction.LEFT);
+                    if (neighborId == null) {
+                        return false;
+                    }
+                    Chunk neighborChunk = findChunkById(neighborId);
+                    if (neighborChunk == null) {
+                        return false;
+                    }
+                    Integer[][][] checkData = neighborChunk.getData();
+                    return checkData != null && checkData[CHUNK_SIZE - 1][y][z] != null;
                 }
             case RIGHT:
-                if (x + 1 < this.xSize) {
-                    return this.nbtData[x + 1][y][z] != null;
+                if (x + 1 < CHUNK_SIZE) {
+                    return this.data[x + 1][y][z] != null;
                 } else {
-                    Integer[][][] checkData = neighborNbtData.get(Direction.RIGHT);
+                    Integer neighborId = this.neighborChunkIds.get(Direction.RIGHT);
+                    if (neighborId == null) {
+                        return false;
+                    }
+                    Chunk neighborChunk = findChunkById(neighborId);
+                    if (neighborChunk == null) {
+                        return false;
+                    }
+                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[0][y][z] != null;
                 }
             case TOP:
-                if (y + 1 < this.ySize) {
-                    return this.nbtData[x][y + 1][z] != null;
+                if (y + 1 < CHUNK_SIZE) {
+                    return this.data[x][y + 1][z] != null;
                 } else {
-                    Integer[][][] checkData = neighborNbtData.get(Direction.TOP);
+                    Integer neighborId = this.neighborChunkIds.get(Direction.TOP);
+                    if (neighborId == null) {
+                        return false;
+                    }
+                    Chunk neighborChunk = findChunkById(neighborId);
+                    if (neighborChunk == null) {
+                        return false;
+                    }
+                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[x][0][z] != null;
                 }
             case BOTTOM:
                 if (y - 1 >= 0) {
-                    return this.nbtData[x][y - 1] != null;
+                    return this.data[x][y - 1] != null;
                 } else {
-                    Integer[][][] checkData = neighborNbtData.get(Direction.BOTTOM);
-                    return checkData != null && checkData[x][this.ySize - 1][z] != null;
+                    Integer neighborId = this.neighborChunkIds.get(Direction.BOTTOM);
+                    if (neighborId == null) {
+                        return false;
+                    }
+                    Chunk neighborChunk = findChunkById(neighborId);
+                    if (neighborChunk == null) {
+                        return false;
+                    }
+                    Integer[][][] checkData = neighborChunk.getData();
+                    return checkData != null && checkData[x][CHUNK_SIZE - 1][z] != null;
                 }
         }
         return false;
     }
 
-    private int calculateVoxelCountNbt() {
+    private Chunk findChunkById(int id) {
+        for (int i = 0; i < World.chunks.size(); i++) {
+            if (World.chunks.get(i).getId() == id) {
+                return World.chunks.get(i);
+            }
+        }
+        return null;
+    }
+
+    private int calculateVoxelCount() {
         int voxelCount = 0;
 
-        for (int x = 0; x < this.xSize; x++) {
-            for (int y = 0; y < this.ySize; y++) {
-                for (int z = 0; z < this.zSize; z++) {
-                    if (this.nbtData[x][y][z] != null) {
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int y = 0; y < CHUNK_SIZE; y++) {
+                for (int z = 0; z < CHUNK_SIZE; z++) {
+                    if (this.data[x][y][z] != null) {
                         voxelCount++;
                     }
                 }
@@ -370,28 +349,10 @@ public class Chunk {
         return voxelCount;
     }
 
-    private int calculateVoxelCountHeightMap() {
-        int voxelCount = 0;
-
-        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
-            for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
-                int maxHeight = (int) Math.ceil(this.heightMapData[x][z]);
-                for (int y = 0; y <= maxHeight; y++) {
-                    voxelCount++;
-                }
-            }
-        }
-
-        return voxelCount;
-    }
 
     private void setupBuffers() {
         this.indicesCount = 0;
-        if (Constants.WORLD_TYPE == WorldType.NBT) {
-            this.numVoxels = this.calculateVoxelCountNbt();
-        } else {
-            this.numVoxels = this.calculateVoxelCountHeightMap();
-        }
+        this.numVoxels = this.calculateVoxelCount();
         this.verticesBuffer = ByteBuffer.allocateDirect(this.countVertices() * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             this.indicesBuffer = ByteBuffer.allocateDirect(this.numVoxels * Constants.VOXEL_FACES_COUNT

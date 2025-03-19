@@ -1,27 +1,37 @@
 package voxelengine.examples;
 
+import org.joml.Vector3d;
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
-import voxelengine.util.*;
+import voxelengine.core.Statistic;
+import voxelengine.util.Chunk;
+import voxelengine.util.Constants;
+import voxelengine.util.NbtUtil;
+import voxelengine.util.NoiseUtil;
+import voxelengine.util.WorldType;
 
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class World implements BaseExample {
+    private static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
     private static final long UPDATE_INTERVAL = 500_000_000;
     private final AtomicLong lastUpdateTime = new AtomicLong(0);
     private boolean isUpdating = false;
-    private final ReentrantLock chunksLock = new ReentrantLock();
-
     private Renderer renderer;
     private NoiseUtil noiseUtil;
-    private List<Chunk> chunks;
+    public static final List<Chunk> chunks = new ArrayList<>();
     private Camera camera;
+    private final Statistic statistic;
     private ExecutorService threadPool;
+
+    public World(Statistic statistic) {
+        this.statistic = statistic;
+    }
 
     @Override
     public void init(Renderer renderer, Camera camera) {
@@ -33,9 +43,9 @@ public class World implements BaseExample {
         threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
 
         if (Constants.WORLD_TYPE == WorldType.NBT) {
-            this.chunks = new NbtUtil(renderer).loadWorld();
+            new NbtUtil(renderer).loadWorld();
         } else {
-            this.chunks = new CopyOnWriteArrayList<>(this.noiseUtil.loadWorld());
+            this.noiseUtil.loadWorld();
         }
 
         if (Constants.OPTIMIZATION_SHADER_MEMORY) {
@@ -65,112 +75,110 @@ public class World implements BaseExample {
     }
 
     private void updateNoiseChunks() {
+        if (Constants.WORLD_TYPE == WorldType.NBT) {
+            return;
+        }
+
         int playerChunkX = this.camera.getChunkX();
         int playerChunkZ = this.camera.getChunkZ();
-        int radius = Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE;
-        int chunkSize = Constants.NOISE_CHUNK_SIZE;
 
-        Set<ChunkPosition> visibleChunkPositions = new HashSet<>();
-        for (int dx = playerChunkX - radius; dx <= playerChunkX + radius; dx += chunkSize) {
-            for (int dz = playerChunkZ - radius; dz <= playerChunkZ + radius; dz += chunkSize) {
-                visibleChunkPositions.add(new ChunkPosition(dx, dz));
+        List<Vector3d> radiusPositions = new ArrayList<>();
+
+        for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
+            for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
+                radiusPositions.add(new Vector3d(dx, 0, dz));
             }
         }
 
-        Map<ChunkPosition, Chunk> visibleChunksMap = new HashMap<>();
-        List<Chunk> chunksToUpdate = new ArrayList<>();
+        List<Vector3d> missingXZPositions = new ArrayList<>();
 
-        chunksLock.lock();
-        try {
-            for (Chunk chunk : this.chunks) {
-                ChunkPosition pos = new ChunkPosition(chunk.getXOffset(), chunk.getZOffset());
-                if (visibleChunkPositions.contains(pos)) {
-                    visibleChunksMap.put(pos, chunk);
-                } else {
-                    chunksToUpdate.add(chunk);
+        for (Vector3d radiusPosition : radiusPositions) {
+            int x = (int) radiusPosition.x;
+            int z = (int) radiusPosition.z;
+            boolean missingXZ = true;
+            for (Chunk chunk : World.chunks) {
+                if (chunk.getXOffset() == x && chunk.getZOffset() == z) {
+                    missingXZ = false;
+                    break;
                 }
             }
-        } finally {
-            chunksLock.unlock();
-        }
-
-        List<ChunkPosition> positionsToAdd = new ArrayList<>();
-        for (ChunkPosition pos : visibleChunkPositions) {
-            if (!visibleChunksMap.containsKey(pos)) {
-                positionsToAdd.add(pos);
+            if (missingXZ) {
+                missingXZPositions.add(radiusPosition);
             }
         }
 
-        positionsToAdd.sort(Comparator.comparingDouble(pos ->
-                Math.sqrt(Math.pow(pos.x - playerChunkX, 2) + Math.pow(pos.z - playerChunkZ, 2))));
+        Iterator<Chunk> iterator = World.chunks.iterator();
+        while (iterator.hasNext()) {
+            Chunk chunk = iterator.next();
+            boolean isOnRadiusPosition = false;
+            for (Vector3d radiusPosition : radiusPositions) {
+                int x = (int) radiusPosition.x;
+                int z = (int) radiusPosition.z;
+                if (chunk.getXOffset() == x && chunk.getZOffset() == z) {
+                    isOnRadiusPosition = true;
+                    break;
+                }
+            }
+            if (!isOnRadiusPosition) {
+                iterator.remove();
+            }
+        }
 
-        int updateCount = Math.min(positionsToAdd.size(), chunksToUpdate.size());
-        for (int i = 0; i < updateCount; i++) {
-            Chunk chunk = chunksToUpdate.get(i);
-            ChunkPosition position = positionsToAdd.get(i);
 
-            chunk.setXOffset(position.x);
-            chunk.setZOffset(position.z);
+        List<Chunk> chunksToUpdate = new ArrayList<>();
 
-            int[][] heightMap = this.noiseUtil.generateHeightMap(position.x, position.z);
+        for (Vector3d missingXZPosition : missingXZPositions) {
+            int x = (int) missingXZPosition.x;
+            int z = (int) missingXZPosition.z;
+            int[][] heightMap = this.noiseUtil.generateHeightMap(x, z);
+            int maxHeight = this.noiseUtil.heightMapMaxHeight(heightMap);
+            for (int dy = 0; dy <= maxHeight; dy += Constants.NOISE_CHUNK_SIZE) {
+                Chunk chunk = new Chunk(x, dy, z);
+                chunk.setData(this.noiseUtil.heightMapSlice(heightMap, dy));
+                chunksToUpdate.add(chunk);
+            }
+        }
 
-            chunk.setHeightMapData(heightMap);
-            this.noiseUtil.updateChunkNeighbourHeightMap(chunks, chunk);
-            chunk.loadDataHeightMap();
+        for (Chunk chunk : chunksToUpdate) {
+            noiseUtil.updateChunkNeighbours(World.chunks, chunk);
+            chunk.loadData();
             chunk.setNeedsBufferLoad(true);
         }
-    }
 
-    private static class ChunkPosition {
-        final int x;
-        final int z;
-
-        ChunkPosition(int x, int z) {
-            this.x = x;
-            this.z = z;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ChunkPosition that = (ChunkPosition) o;
-            return x == that.x && z == that.z;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(x, z);
-        }
+        World.chunks.addAll(chunksToUpdate);
     }
 
     @Override
     public void render() {
-        for (int i = 0; i < this.chunks.size(); i++) {
-            if (this.chunks.get(i).needsBufferLoad()) {
-                this.chunks.get(i).loadBuffers(this.renderer.getProgramId());
+        System.out.println(World.chunks.size());
+        int renderCount = 0;
+
+        for (int i = 0; i < World.chunks.size(); i++) {
+            if (World.chunks.get(i).needsBufferLoad()) {
+                World.chunks.get(i).loadBuffers(this.renderer.getProgramId());
             }
             if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
-                int chunkSize = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
-                int height = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_MAX_Y;
                 boolean isOnFrustum = this.camera.isOnFrustum(
                         chunks.get(i).getXOffset(),
+                        chunks.get(i).getYOffset(),
                         chunks.get(i).getZOffset(),
-                        chunkSize,
-                        height);
+                        CHUNK_SIZE,
+                        CHUNK_SIZE,
+                        CHUNK_SIZE);
                 if (isOnFrustum) {
-                    this.chunks.get(i).render();
+                    World.chunks.get(i).render();
+                    renderCount++;
                 }
             } else {
-                this.chunks.get(i).render();
+                World.chunks.get(i).render();
+                renderCount++;
             }
         }
+        this.statistic.setRenderedChunkCount(renderCount);
     }
 
     @Override
     public void destroy() {
-        if (threadPool != null) {
-            threadPool.shutdown();
-        }
+
     }
 }

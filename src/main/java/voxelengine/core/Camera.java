@@ -5,6 +5,7 @@ import org.joml.Vector3d;
 import org.joml.Vector4d;
 import org.lwjgl.BufferUtils;
 import voxelengine.util.Constants;
+import voxelengine.util.WorldType;
 import voxelengine.window.Window;
 
 import java.nio.FloatBuffer;
@@ -13,7 +14,8 @@ import static org.lwjgl.opengl.GL20C.glUniform3fv;
 import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
 
 public class Camera {
-    private final Vector3d position = new Vector3d(0, 200, 0);
+    private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
+    private final Vector3d position = new Vector3d(2000, 200, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
     private Matrix4d viewMatrix = new Matrix4d();
@@ -22,11 +24,13 @@ public class Camera {
 
     private Renderer renderer;
     private Window window;
+    private Statistic statistic;
 
     private double yaw = 0;
     private double pitch = 0;
 
-    public void init(Renderer renderer, Window window) {
+    public void init(Renderer renderer, Window window, Statistic statistic) {
+        this.statistic = statistic;
         this.renderer = renderer;
         this.window = window;
 
@@ -51,25 +55,27 @@ public class Camera {
             this.pitch = -89.0f;
     }
 
-    public boolean isOnFrustum(int positionX, int positionZ, int width, int height) {
-        double minY = 0;
-        double maxY = height;
-
+    public boolean isOnFrustum(int positionX, int positionY, int positionZ, int width, int height, int depth) {
+        if (Constants.WORLD_TYPE == WorldType.NOISE) {
+            height *= 2;
+        }
         Vector3d[] corners = new Vector3d[8];
-        corners[0] = new Vector3d(positionX, minY, positionZ);
-        corners[1] = new Vector3d(positionX + width, minY, positionZ);
-        corners[2] = new Vector3d(positionX + width, minY, positionZ + height);
-        corners[3] = new Vector3d(positionX, minY, positionZ + height);
-        corners[4] = new Vector3d(positionX, maxY, positionZ);
-        corners[5] = new Vector3d(positionX + width, maxY, positionZ);
-        corners[6] = new Vector3d(positionX + width, maxY, positionZ + height);
-        corners[7] = new Vector3d(positionX, maxY, positionZ + height);
+        // Bottom corners
+        corners[0] = new Vector3d(positionX, positionY, positionZ);
+        corners[1] = new Vector3d(positionX + width, positionY, positionZ);
+        corners[2] = new Vector3d(positionX + width, positionY, positionZ + depth);
+        corners[3] = new Vector3d(positionX, positionY, positionZ + depth);
+        // Top corners
+        corners[4] = new Vector3d(positionX, positionY + height, positionZ);
+        corners[5] = new Vector3d(positionX + width, positionY + height, positionZ);
+        corners[6] = new Vector3d(positionX + width, positionY + height, positionZ + depth);
+        corners[7] = new Vector3d(positionY, positionY + height, positionZ + depth);
 
         for (int i = 0; i < 6; i++) {
             boolean allCornersOutside = true;
 
             for (Vector3d corner : corners) {
-                if (distanceToPlane(frustumPlanes[i], corner) >= 0) {
+                if (distanceToPlane(frustumPlanes[i], corner) >= (0 + FRUSTUM_SHRINK_FACTOR)) {
                     allCornersOutside = false;
                     break;
                 }
@@ -193,6 +199,7 @@ public class Camera {
                 viewProjection.m33() - viewProjection.m32());
 
         normalizePlanes();
+        this.statistic.setCameraPosition(this.position);
     }
 
 

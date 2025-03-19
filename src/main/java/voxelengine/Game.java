@@ -2,6 +2,7 @@ package voxelengine;
 
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
+import voxelengine.core.Statistic;
 import voxelengine.examples.BaseExample;
 import voxelengine.examples.Triangle2d;
 import voxelengine.examples.Voxel2d;
@@ -22,14 +23,16 @@ public class Game {
     private Renderer renderer;
     private Window window;
     private BaseExample example;
+    private Statistic statistic;
 
     public void init() {
+        this.statistic = new Statistic();
         this.camera = new Camera();
-        this.renderer = new Renderer();
+        this.renderer = new Renderer(statistic);
         this.window = new Window();
 
         this.window.init(camera, renderer);
-        this.camera.init(renderer, window);
+        this.camera.init(renderer, window, statistic);
         this.window.init();
         this.renderer.init();
 
@@ -44,11 +47,12 @@ public class Game {
                 this.example = new Voxel3d();
                 break;
             case WORLD:
-                this.example = new World();
+                this.example = new World(statistic);
                 break;
         }
 
         this.example.init(renderer, camera);
+        this.statistic.startPrint();
     }
 
     public void loop() {

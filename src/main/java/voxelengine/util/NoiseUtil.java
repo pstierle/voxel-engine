@@ -2,6 +2,7 @@ package voxelengine.util;
 
 import voxelengine.core.Camera;
 import voxelengine.core.Renderer;
+import voxelengine.examples.World;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -9,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 public class NoiseUtil {
+    private static final float SAND_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
+    private static final float MOUNTAIN_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
+
     private final FastNoiseLite baseNoise;
     private final FastNoiseLite detailNoise;
     private final FastNoiseLite largeFeatureNoise;
@@ -132,7 +136,7 @@ public class NoiseUtil {
                         riverDepth *= 1.5f;
                     }
                     terrainHeight -= riverDepth;
-                    terrainHeight = Math.max(terrainHeight, valleyScale); // Don't go below base valley level
+                    terrainHeight = Math.max(terrainHeight, valleyScale);
                 }
 
                 terrainHeight = Math.min(terrainHeight, Constants.NOISE_CHUNK_MAX_Y);
@@ -171,7 +175,6 @@ public class NoiseUtil {
                     continue;
                 }
 
-                // Otherwise apply smoothing
                 float sum = 0;
                 int count = 0;
                 for (int dx = -1; dx <= 1; dx++) {
@@ -192,7 +195,7 @@ public class NoiseUtil {
         }
     }
 
-    public List<Chunk> loadWorld() {
+    public void loadWorld() {
         int playerChunkX = this.camera.getChunkX();
         int playerChunkZ = this.camera.getChunkZ();
 
@@ -200,72 +203,93 @@ public class NoiseUtil {
 
         for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
-                Chunk chunk = new Chunk(dx, 0, dz, Constants.NOISE_CHUNK_SIZE, Constants.NOISE_CHUNK_MAX_Y, Constants.NOISE_CHUNK_SIZE);
-                int[][] heightMap = generateHeightMap(chunk.getXOffset(), chunk.getZOffset());
-                chunk.setHeightMapData(heightMap);
-                chunks.add(chunk);
+                int[][] heightMap = generateHeightMap(dx, dz);
+                int maxHeight = heightMapMaxHeight(heightMap);
+                for (int dy = 0; dy <= maxHeight; dy += Constants.NOISE_CHUNK_SIZE) {
+                    Chunk chunk = new Chunk(dx, dy, dz);
+                    chunk.setData(heightMapSlice(heightMap, dy));
+                    chunks.add(chunk);
+                }
             }
         }
 
         for (Chunk chunk : chunks) {
-            updateChunkNeighbourHeightMap(chunks, chunk);
+            updateChunkNeighbours(chunks, chunk);
         }
+
+        World.chunks.addAll(chunks);
 
         for (int i = 0; i < chunks.size(); i++) {
             Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
-            chunks.get(i).loadDataHeightMap();
+            chunks.get(i).loadData();
             chunks.get(i).loadBuffers(this.renderer.getProgramId());
         }
-
-        return chunks;
     }
 
-    public void updateChunkNeighbourHeightMap(List<Chunk> chunks, Chunk chunk) {
-        Map<Direction, int[][]> neighborHeightMap = new EnumMap<>(Direction.class);
+    public int heightMapMaxHeight(int[][] heightMap) {
+        int maxHeight = 0;
+        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
+            for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
+                maxHeight = Math.max(maxHeight, heightMap[x][z]);
+            }
+        }
+        return maxHeight;
+    }
 
-        // ignore top/bottom for noise
-        neighborHeightMap.put(Direction.FRONT, null);
-        neighborHeightMap.put(Direction.BACK, null);
-        neighborHeightMap.put(Direction.LEFT, null);
-        neighborHeightMap.put(Direction.RIGHT, null);
+    public Integer[][][] heightMapSlice(int[][] heightMap, int dy) {
+        Integer[][][] data = new Integer[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE];
+
+        for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
+            for (int y = 0; y < Constants.NOISE_CHUNK_SIZE; y++) {
+                for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
+                    int worldY = y + dy;
+                    if (worldY <= heightMap[x][z]) {
+                        int colorIndex;
+                        if (worldY <= 10) {
+                            colorIndex = ColorUtil.WATER_COLOR_INDEX;
+                        } else if (worldY <= SAND_LEVEL) {
+                            colorIndex = ColorUtil.SAND_COLOR_INDEX;
+                        } else if (worldY <= MOUNTAIN_LEVEL) {
+                            colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX;
+                        } else {
+                            colorIndex = ColorUtil.SNOW_COLOR_INDEX;
+                        }
+                        data[x][y][z] = colorIndex;
+                    } else {
+                        if (worldY <= 10) {
+                            data[x][y][z] = ColorUtil.WATER_COLOR_INDEX;
+
+                        }
+                    }
+                }
+            }
+        }
+        return data;
+    }
+
+    public void updateChunkNeighbours(List<Chunk> chunks, Chunk chunk) {
+        Map<Direction, Integer> neighborChunkIds = new EnumMap<>(Direction.class);
 
         for (Chunk neighbourChunk : chunks) {
             Direction neighborDirection = null;
-            if (neighbourChunk.getZOffset() == chunk.getZOffset() + chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {
+            if (neighbourChunk.getZOffset() == chunk.getZOffset() + Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
                 neighborDirection = Direction.FRONT;
-            } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - chunk.getZSize() && neighbourChunk.getXOffset() == chunk.getXOffset()) {
+            } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
                 neighborDirection = Direction.BACK;
-            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + chunk.getXSize() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + Constants.NOISE_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
                 neighborDirection = Direction.RIGHT;
-            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - chunk.getXSize() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - Constants.NOISE_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
                 neighborDirection = Direction.LEFT;
+            } else if (neighbourChunk.getYOffset() == chunk.getYOffset() + Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                neighborDirection = Direction.TOP;
+            } else if (neighbourChunk.getYOffset() == chunk.getYOffset() - Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
+                neighborDirection = Direction.BOTTOM;
             }
             if (neighborDirection != null) {
-                neighborHeightMap.put(neighborDirection, neighbourChunk.getHeightMapData());
+                neighborChunkIds.put(neighborDirection, neighbourChunk.getId());
             }
         }
-        // fill neighbours that are not yet generated
-        neighborHeightMap.forEach((direction, heightMap) -> {
-            if (heightMap == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
-                int dx = chunk.getXOffset();
-                int dz = chunk.getZOffset();
-                switch (direction) {
-                    case FRONT:
-                        dz += Constants.NOISE_CHUNK_SIZE;
-                        break;
-                    case BACK:
-                        dz -= Constants.NOISE_CHUNK_SIZE;
-                        break;
-                    case LEFT:
-                        dx -= Constants.NOISE_CHUNK_SIZE;
-                        break;
-                    case RIGHT:
-                        dx += Constants.NOISE_CHUNK_SIZE;
-                        break;
-                }
-                neighborHeightMap.put(direction, generateHeightMap(dx, dz));
-            }
-        });
-        chunk.setNeighborHeightMap(neighborHeightMap);
+
+        chunk.setNeighborChunkIds(neighborChunkIds);
     }
 }
