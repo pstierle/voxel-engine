@@ -14,7 +14,7 @@ import static org.lwjgl.opengl.GL20C.glUniform3fv;
 import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
 
 public class Camera {
-    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 200.0;
+    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 100.0;
     private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
     private final Vector3d position = new Vector3d(0, 200, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
