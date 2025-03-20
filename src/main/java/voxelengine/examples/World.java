@@ -139,39 +139,45 @@ public class World implements BaseExample {
             }
         }
 
-        for (Chunk chunk : chunksToUpdate) {
+        World.chunks.addAll(chunksToUpdate);
+
+        for (Chunk chunk : World.chunks) {
             noiseUtil.updateChunkNeighbours(World.chunks, chunk);
+        }
+
+        for (Chunk chunk : chunksToUpdate) {
             chunk.loadData();
             chunk.setNeedsBufferLoad(true);
         }
-
-        World.chunks.addAll(chunksToUpdate);
     }
 
     @Override
     public void render() {
-        System.out.println(World.chunks.size());
         int renderCount = 0;
 
         for (int i = 0; i < World.chunks.size(); i++) {
-            if (World.chunks.get(i).needsBufferLoad()) {
-                World.chunks.get(i).loadBuffers(this.renderer.getProgramId());
-            }
-            if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
-                boolean isOnFrustum = this.camera.isOnFrustum(
-                        chunks.get(i).getXOffset(),
-                        chunks.get(i).getYOffset(),
-                        chunks.get(i).getZOffset(),
-                        CHUNK_SIZE,
-                        CHUNK_SIZE,
-                        CHUNK_SIZE);
-                if (isOnFrustum) {
+            try {
+                if (World.chunks.get(i).needsBufferLoad()) {
+                    World.chunks.get(i).loadBuffers(this.renderer.getProgramId());
+                }
+                if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
+                    boolean isOnFrustum = this.camera.isOnFrustum(
+                            chunks.get(i).getXOffset(),
+                            chunks.get(i).getYOffset(),
+                            chunks.get(i).getZOffset(),
+                            CHUNK_SIZE,
+                            CHUNK_SIZE,
+                            CHUNK_SIZE);
+                    if (isOnFrustum) {
+                        World.chunks.get(i).render();
+                        renderCount++;
+                    }
+                } else {
                     World.chunks.get(i).render();
                     renderCount++;
                 }
-            } else {
-                World.chunks.get(i).render();
-                renderCount++;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         this.statistic.setRenderedChunkCount(renderCount);

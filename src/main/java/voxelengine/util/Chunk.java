@@ -49,6 +49,7 @@ public class Chunk {
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
     private Map<Direction, Integer> neighborChunkIds;
+    private Map<Direction, Integer[][][]> neighborChunksData;
 
     public int getId() {
         return id;
@@ -66,24 +67,16 @@ public class Chunk {
         return zOffset;
     }
 
-    public void setXOffset(int xOffset) {
-        this.xOffset = xOffset;
-    }
-
-    public void setYOffset(int yOffset) {
-        this.yOffset = yOffset;
-    }
-
-    public void setZOffset(int zOffset) {
-        this.zOffset = zOffset;
-    }
-
     public void setNeedsBufferLoad(boolean needsBufferLoad) {
         this.needsBufferLoad = needsBufferLoad;
     }
 
     public boolean needsBufferLoad() {
         return needsBufferLoad;
+    }
+
+    public void setNeighborChunksData(Map<Direction, Integer[][][]> neighborChunksData) {
+        this.neighborChunksData = neighborChunksData;
     }
 
     public void setData(Integer[][][] data) {
@@ -234,90 +227,102 @@ public class Chunk {
                 if (z + 1 < CHUNK_SIZE) {
                     return this.data[x][y][z + 1] != null;
                 } else {
+                    Integer[][][] checkData = null;
                     Integer neighborId = this.neighborChunkIds.get(Direction.FRONT);
-                    if (neighborId == null) {
-                        return false;
+                    if (neighborId != null) {
+                        Chunk neighborChunk = findChunkById(neighborId);
+                        if (neighborChunk != null) {
+                            checkData = neighborChunk.getData();
+                        }
                     }
-                    Chunk neighborChunk = findChunkById(neighborId);
-                    if (neighborChunk == null) {
-                        return false;
+                    if (checkData == null && this.neighborChunksData != null) {
+                        checkData = this.neighborChunksData.get(Direction.FRONT);
                     }
-                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[x][y][0] != null;
                 }
             case BACK:
                 if (z - 1 >= 0) {
                     return this.data[x][y][z - 1] != null;
                 } else {
+                    Integer[][][] checkData = null;
                     Integer neighborId = this.neighborChunkIds.get(Direction.BACK);
-                    if (neighborId == null) {
-                        return false;
+                    if (neighborId != null) {
+                        Chunk neighborChunk = findChunkById(neighborId);
+                        if (neighborChunk != null) {
+                            checkData = neighborChunk.getData();
+                        }
                     }
-                    Chunk neighborChunk = findChunkById(neighborId);
-                    if (neighborChunk == null) {
-                        return false;
+                    if (checkData == null && this.neighborChunksData != null) {
+                        checkData = this.neighborChunksData.get(Direction.BACK);
                     }
-                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[x][y][CHUNK_SIZE - 1] != null;
                 }
             case LEFT:
                 if (x - 1 >= 0) {
                     return this.data[x - 1][y][z] != null;
                 } else {
+                    Integer[][][] checkData = null;
                     Integer neighborId = this.neighborChunkIds.get(Direction.LEFT);
-                    if (neighborId == null) {
-                        return false;
+                    if (neighborId != null) {
+                        Chunk neighborChunk = findChunkById(neighborId);
+                        if (neighborChunk != null) {
+                            checkData = neighborChunk.getData();
+                        }
                     }
-                    Chunk neighborChunk = findChunkById(neighborId);
-                    if (neighborChunk == null) {
-                        return false;
+                    if (checkData == null && this.neighborChunksData != null) {
+                        checkData = this.neighborChunksData.get(Direction.LEFT);
                     }
-                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[CHUNK_SIZE - 1][y][z] != null;
                 }
             case RIGHT:
                 if (x + 1 < CHUNK_SIZE) {
                     return this.data[x + 1][y][z] != null;
                 } else {
+                    Integer[][][] checkData = null;
                     Integer neighborId = this.neighborChunkIds.get(Direction.RIGHT);
-                    if (neighborId == null) {
-                        return false;
+                    if (neighborId != null) {
+                        Chunk neighborChunk = findChunkById(neighborId);
+                        if (neighborChunk != null) {
+                            checkData = neighborChunk.getData();
+                        }
                     }
-                    Chunk neighborChunk = findChunkById(neighborId);
-                    if (neighborChunk == null) {
-                        return false;
+                    if (checkData == null && this.neighborChunksData != null) {
+                        checkData = this.neighborChunksData.get(Direction.RIGHT);
                     }
-                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[0][y][z] != null;
                 }
             case TOP:
                 if (y + 1 < CHUNK_SIZE) {
                     return this.data[x][y + 1][z] != null;
                 } else {
+                    Integer[][][] checkData = null;
                     Integer neighborId = this.neighborChunkIds.get(Direction.TOP);
-                    if (neighborId == null) {
-                        return false;
+                    if (neighborId != null) {
+                        Chunk neighborChunk = findChunkById(neighborId);
+                        if (neighborChunk != null) {
+                            checkData = neighborChunk.getData();
+                        }
                     }
-                    Chunk neighborChunk = findChunkById(neighborId);
-                    if (neighborChunk == null) {
-                        return false;
+                    if (checkData == null && this.neighborChunksData != null) {
+                        checkData = this.neighborChunksData.get(Direction.TOP);
                     }
-                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[x][0][z] != null;
                 }
             case BOTTOM:
                 if (y - 1 >= 0) {
                     return this.data[x][y - 1] != null;
                 } else {
+                    Integer[][][] checkData = null;
                     Integer neighborId = this.neighborChunkIds.get(Direction.BOTTOM);
-                    if (neighborId == null) {
-                        return false;
+                    if (neighborId != null) {
+                        Chunk neighborChunk = findChunkById(neighborId);
+                        if (neighborChunk != null) {
+                            checkData = neighborChunk.getData();
+                        }
                     }
-                    Chunk neighborChunk = findChunkById(neighborId);
-                    if (neighborChunk == null) {
-                        return false;
+                    if (checkData == null && this.neighborChunksData != null) {
+                        checkData = this.neighborChunksData.get(Direction.BOTTOM);
                     }
-                    Integer[][][] checkData = neighborChunk.getData();
                     return checkData != null && checkData[x][CHUNK_SIZE - 1][z] != null;
                 }
         }

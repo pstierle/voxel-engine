@@ -14,8 +14,9 @@ import static org.lwjgl.opengl.GL20C.glUniform3fv;
 import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
 
 public class Camera {
+    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 200.0;
     private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
-    private final Vector3d position = new Vector3d(2000, 200, 0);
+    private final Vector3d position = new Vector3d(0, 200, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
     private Matrix4d viewMatrix = new Matrix4d();
@@ -98,27 +99,27 @@ public class Camera {
 
         if (this.window.getKeyboard().isWPressed()) {
             Vector3d intermediate = new Vector3d();
-            this.front.mul(Constants.CAMERA_SPEED * deltaTime, intermediate);
+            this.front.mul(CAMERA_SPEED * deltaTime, intermediate);
             this.position.add(intermediate);
         }
 
         if (this.window.getKeyboard().isSPressed()) {
             Vector3d intermediate = new Vector3d();
-            this.front.mul(Constants.CAMERA_SPEED * deltaTime, intermediate);
+            this.front.mul(CAMERA_SPEED * deltaTime, intermediate);
             this.position.sub(intermediate);
         }
 
         if (this.window.getKeyboard().isDPressed()) {
             Vector3d right = new Vector3d();
             this.front.cross(this.up, right).normalize();
-            right.mul(Constants.CAMERA_SPEED * deltaTime, right);
+            right.mul(CAMERA_SPEED * deltaTime, right);
             this.position.add(right);
         }
 
         if (this.window.getKeyboard().isAPressed()) {
             Vector3d left = new Vector3d();
             this.front.cross(this.up, left).normalize();
-            left.mul(Constants.CAMERA_SPEED * deltaTime, left);
+            left.mul(CAMERA_SPEED * deltaTime, left);
             this.position.sub(left);
         }
 

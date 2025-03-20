@@ -269,6 +269,12 @@ public class NoiseUtil {
 
     public void updateChunkNeighbours(List<Chunk> chunks, Chunk chunk) {
         Map<Direction, Integer> neighborChunkIds = new EnumMap<>(Direction.class);
+        neighborChunkIds.put(Direction.FRONT, null);
+        neighborChunkIds.put(Direction.BACK, null);
+        neighborChunkIds.put(Direction.LEFT, null);
+        neighborChunkIds.put(Direction.RIGHT, null);
+        neighborChunkIds.put(Direction.TOP, null);
+        neighborChunkIds.put(Direction.BOTTOM, null);
 
         for (Chunk neighbourChunk : chunks) {
             Direction neighborDirection = null;
@@ -290,6 +296,36 @@ public class NoiseUtil {
             }
         }
 
+        Map<Direction, Integer[][][]> neighborChunksData = new EnumMap<>(Direction.class);
+        neighborChunksData.put(Direction.FRONT, null);
+        neighborChunksData.put(Direction.BACK, null);
+        neighborChunksData.put(Direction.LEFT, null);
+        neighborChunksData.put(Direction.RIGHT, null);
+        neighborChunksData.put(Direction.TOP, null);
+        neighborChunksData.put(Direction.BOTTOM, null);
+
+        neighborChunkIds.forEach(((direction, id) -> {
+            if (id == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
+                int dx = chunk.getXOffset();
+                int dz = chunk.getZOffset();
+                switch (direction) {
+                    case FRONT:
+                        dz += Constants.NOISE_CHUNK_SIZE;
+                        break;
+                    case BACK:
+                        dz -= Constants.NOISE_CHUNK_SIZE;
+                        break;
+                    case LEFT:
+                        dx -= Constants.NOISE_CHUNK_SIZE;
+                        break;
+                    case RIGHT:
+                        dx += Constants.NOISE_CHUNK_SIZE;
+                        break;
+                }
+                neighborChunksData.put(direction, heightMapSlice(generateHeightMap(dx, dz), chunk.getYOffset()));
+            }
+        }));
+        chunk.setNeighborChunksData(neighborChunksData);
         chunk.setNeighborChunkIds(neighborChunkIds);
     }
 }
