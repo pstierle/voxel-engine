@@ -15,7 +15,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class World {
-    private static final int PROCESSOR_COUNT = Runtime.getRuntime().availableProcessors();
     private static final long UPDATE_INTERVAL = 100_000_000;
     public static final Map<Vector3Key, Chunk> chunks = new ConcurrentHashMap<>();
     private long lastUpdateTime = 0;
@@ -31,7 +30,7 @@ public class World {
     }
 
     public void init() {
-        threadPool = Executors.newFixedThreadPool(PROCESSOR_COUNT);
+        threadPool = Executors.newFixedThreadPool(State.PROCESSOR_COUNT);
         if (Constants.WORLD_TYPE == WorldType.NBT) {
             State.nbtUtil.loadWorld();
         } else {
@@ -133,6 +132,12 @@ public class World {
                 World.chunks.put(new Vector3Key(chunk.getXOffset(), chunk.getYOffset(), chunk.getZOffset()), chunk);
             }
         }
+
+        newChunks.sort((chunk1, chunk2) -> {
+            int distance1 = calculateDistanceToPlayer(chunk1);
+            int distance2 = calculateDistanceToPlayer(chunk2);
+            return Integer.compare(distance1, distance2);
+        });
 
         for (Chunk chunk : newChunks) {
             chunk.loadNeighbors();

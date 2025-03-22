@@ -444,7 +444,7 @@ public class Chunk {
 
 
     private boolean skipFace(Direction direction, int x, int y, int z) {
-        if (Constants.OPTIMIZATION_FILTER_FACES == false) {
+        if (Constants.OPTIMIZATION_FACE_CULLING == false) {
             return false;
         }
         switch (direction) {
@@ -484,7 +484,7 @@ public class Chunk {
                     return checkData != null && checkData[x][0][z] != null;
                 }
             case BOTTOM:
-                if (y == 0 && Constants.WORLD_TYPE == WorldType.NOISE && Constants.OPTIMIZATION_FILTER_FACES) {
+                if (y == 0 && Constants.WORLD_TYPE == WorldType.NOISE) {
                     return true;
                 }
                 if (y - 1 >= 0) {

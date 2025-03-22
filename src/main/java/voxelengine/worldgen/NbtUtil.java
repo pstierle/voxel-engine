@@ -7,6 +7,7 @@ import dev.dewy.nbt.tags.collection.CompoundTag;
 import dev.dewy.nbt.tags.collection.ListTag;
 import dev.dewy.nbt.tags.primitive.IntTag;
 import dev.dewy.nbt.tags.primitive.StringTag;
+import voxelengine.core.State;
 import voxelengine.examples.World;
 import voxelengine.util.Chunk;
 import voxelengine.util.ColorUtil;
@@ -80,7 +81,7 @@ public class NbtUtil {
     }
 
     private void loadNbtWorld() {
-        ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ExecutorService threadPool = Executors.newFixedThreadPool(State.PROCESSOR_COUNT);
         try {
             loadColors();
             URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_FOLDER_PATH);

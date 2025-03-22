@@ -22,7 +22,7 @@ public class NoiseUtil {
     private final FastNoiseLite erosionNoise;
 
     private final Map<VectorXZKey, int[][]> heightMapCache = new ConcurrentHashMap<>();
-    private static final int HEIGHT_MAP_CACHE_SIZE = 64;
+    private static final int HEIGHT_MAP_CACHE_SIZE = 128;
 
     public NoiseUtil() {
         this.baseNoise = new FastNoiseLite(Constants.NOISE_WORLD_SEED);

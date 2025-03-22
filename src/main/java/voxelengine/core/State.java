@@ -10,6 +10,7 @@ public class State {
     private State() {
     }
 
+    public static final int PROCESSOR_COUNT = Runtime.getRuntime().availableProcessors();
     public static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
     public static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 50.0;
 
