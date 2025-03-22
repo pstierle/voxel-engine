@@ -14,9 +14,10 @@ import static org.lwjgl.opengl.GL20C.glUniform3fv;
 import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
 
 public class Camera {
-    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 100.0;
+    private static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
+    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 50.0;
     private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
-    private final Vector3d position = new Vector3d(0, 200, 0);
+    private final Vector3d position = new Vector3d(0, 100, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
     private Matrix4d viewMatrix = new Matrix4d();
@@ -56,21 +57,22 @@ public class Camera {
             this.pitch = -89.0f;
     }
 
-    public boolean isOnFrustum(int positionX, int positionY, int positionZ, int width, int height, int depth) {
+    public boolean isOnFrustum(int positionX, int positionY, int positionZ) {
+        int height = CHUNK_SIZE;
         if (Constants.WORLD_TYPE == WorldType.NOISE) {
             height *= 2;
         }
         Vector3d[] corners = new Vector3d[8];
         // Bottom corners
         corners[0] = new Vector3d(positionX, positionY, positionZ);
-        corners[1] = new Vector3d(positionX + width, positionY, positionZ);
-        corners[2] = new Vector3d(positionX + width, positionY, positionZ + depth);
-        corners[3] = new Vector3d(positionX, positionY, positionZ + depth);
+        corners[1] = new Vector3d(positionX + CHUNK_SIZE, positionY, positionZ);
+        corners[2] = new Vector3d(positionX + CHUNK_SIZE, positionY, positionZ + CHUNK_SIZE);
+        corners[3] = new Vector3d(positionX, positionY, positionZ + CHUNK_SIZE);
         // Top corners
         corners[4] = new Vector3d(positionX, positionY + height, positionZ);
-        corners[5] = new Vector3d(positionX + width, positionY + height, positionZ);
-        corners[6] = new Vector3d(positionX + width, positionY + height, positionZ + depth);
-        corners[7] = new Vector3d(positionY, positionY + height, positionZ + depth);
+        corners[5] = new Vector3d(positionX + CHUNK_SIZE, positionY + height, positionZ);
+        corners[6] = new Vector3d(positionX + CHUNK_SIZE, positionY + height, positionZ + CHUNK_SIZE);
+        corners[7] = new Vector3d(positionY, positionY + height, positionZ + CHUNK_SIZE);
 
         for (int i = 0; i < 6; i++) {
             boolean allCornersOutside = true;

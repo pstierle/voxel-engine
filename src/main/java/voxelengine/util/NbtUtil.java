@@ -121,35 +121,45 @@ public class NbtUtil {
         }
 
         for (Chunk chunk : chunks) {
-            Map<Direction, Integer> neighborChunkIds = new EnumMap<>(Direction.class);
-            for (Chunk neighbourChunk : chunks) {
-                Direction neighborDirection = null;
-                if (neighbourChunk.getZOffset() == chunk.getZOffset() + Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset()) {
-                    neighborDirection = Direction.FRONT;
-                } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset()) {
-                    neighborDirection = Direction.BACK;
-                } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + Constants.NBT_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset()) {
-                    neighborDirection = Direction.RIGHT;
-                } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - Constants.NBT_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset()) {
-                    neighborDirection = Direction.LEFT;
-                } else if (neighbourChunk.getYOffset() == chunk.getYOffset() + Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
-                    neighborDirection = Direction.TOP;
-                } else if (neighbourChunk.getYOffset() == chunk.getYOffset() - Constants.NBT_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
-                    neighborDirection = Direction.BOTTOM;
-                }
-                if (neighborDirection != null) {
-                    neighborChunkIds.put(neighborDirection, neighbourChunk.getId());
-                }
-            }
-            chunk.setNeighborChunkIds(neighborChunkIds);
-        }
+            Map<Direction, Vector3Key> neighborChunkKeys = new EnumMap<>(Direction.class);
 
-        World.chunks.addAll(chunks);
+            int x = chunk.getXOffset();
+            int y = chunk.getYOffset();
+            int z = chunk.getZOffset();
+
+            Vector3Key rightKey = new Vector3Key(x + Constants.NOISE_CHUNK_SIZE, y, z); // RIGHT
+            Vector3Key leftKey = new Vector3Key(x - Constants.NOISE_CHUNK_SIZE, y, z); // LEFT
+            Vector3Key frontKey = new Vector3Key(x, y, z + Constants.NOISE_CHUNK_SIZE); // FRONT
+            Vector3Key backKey = new Vector3Key(x, y, z - Constants.NOISE_CHUNK_SIZE); // BACK
+            Vector3Key topKey = new Vector3Key(x, y + Constants.NOISE_CHUNK_SIZE, z); // TOP
+            Vector3Key bottomKey = new Vector3Key(x, y - Constants.NOISE_CHUNK_SIZE, z); // BOTTOM
+
+            if (World.chunks.get(rightKey) != null) {
+                neighborChunkKeys.put(Direction.RIGHT, rightKey);
+            }
+            if (World.chunks.get(leftKey) != null) {
+                neighborChunkKeys.put(Direction.LEFT, leftKey);
+            }
+            if (World.chunks.get(frontKey) != null) {
+                neighborChunkKeys.put(Direction.FRONT, frontKey);
+            }
+            if (World.chunks.get(backKey) != null) {
+                neighborChunkKeys.put(Direction.BACK, backKey);
+            }
+            if (World.chunks.get(topKey) != null) {
+                neighborChunkKeys.put(Direction.TOP, topKey);
+            }
+            if (World.chunks.get(bottomKey) != null) {
+                neighborChunkKeys.put(Direction.BOTTOM, bottomKey);
+            }
+            chunk.setNeighborChunkKeys(neighborChunkKeys);
+        }
 
         for (int i = 0; i < chunks.size(); i++) {
             Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
             chunks.get(i).loadData();
             chunks.get(i).loadBuffers(this.renderer.getProgramId());
+            World.chunks.put(new Vector3Key(chunks.get(i).getXOffset(), chunks.get(i).getYOffset(), chunks.get(i).getZOffset()), chunks.get(i));
         }
     }
 

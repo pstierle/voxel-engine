@@ -105,6 +105,7 @@ public class Window {
         glfwSetKeyCallback(this.handle, (window, key, scancode, action, mods) -> {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 glfwSetWindowShouldClose(window, true);
+                System.exit(0);
             }
             if (key == GLFW_KEY_U && action == GLFW_RELEASE) {
                 this.renderer.toggleWireframe();

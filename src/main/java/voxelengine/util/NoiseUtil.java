@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NoiseUtil {
     private static final float SAND_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
@@ -20,6 +21,9 @@ public class NoiseUtil {
     private final FastNoiseLite erosionNoise;
     private final Renderer renderer;
     private final Camera camera;
+
+    private final Map<VectorXZKey, int[][]> heightMapCache = new ConcurrentHashMap<>();
+    private static final int HEIGHT_MAP_CACHE_SIZE = 64;
 
     public NoiseUtil(Renderer renderer, Camera camera) {
         this.baseNoise = new FastNoiseLite(Constants.NOISE_WORLD_SEED);
@@ -51,6 +55,11 @@ public class NoiseUtil {
     }
 
     public int[][] generateHeightMap(int chunkOffsetX, int chunkOffsetZ) {
+        VectorXZKey cacheKey = new VectorXZKey(chunkOffsetX, chunkOffsetZ);
+        if (heightMapCache.containsKey(cacheKey)) {
+            return heightMapCache.get(cacheKey);
+        }
+
         int[][] heightMap = new int[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE];
 
         float mountainScale = Constants.NOISE_CHUNK_MAX_Y * 0.9f;
@@ -146,6 +155,11 @@ public class NoiseUtil {
 
         smoothHeightMap(heightMap);
 
+        if (heightMapCache.size() > HEIGHT_MAP_CACHE_SIZE) {
+            heightMapCache.remove(heightMapCache.keySet().iterator().next());
+        }
+        heightMapCache.put(cacheKey, heightMap);
+
         return heightMap;
     }
 
@@ -209,18 +223,14 @@ public class NoiseUtil {
                     Chunk chunk = new Chunk(dx, dy, dz);
                     chunk.setData(heightMapSlice(heightMap, dy));
                     chunks.add(chunk);
+                    World.chunks.put(new Vector3Key(dx, dy, dz), chunk);
                 }
             }
         }
 
-        for (Chunk chunk : chunks) {
-            updateChunkNeighbours(chunks, chunk);
-        }
-
-        World.chunks.addAll(chunks);
-
         for (int i = 0; i < chunks.size(); i++) {
             Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
+            updateChunkNeighbours(chunks.get(i));
             chunks.get(i).loadData();
             chunks.get(i).loadBuffers(this.renderer.getProgramId());
         }
@@ -267,33 +277,43 @@ public class NoiseUtil {
         return data;
     }
 
-    public void updateChunkNeighbours(List<Chunk> chunks, Chunk chunk) {
-        Map<Direction, Integer> neighborChunkIds = new EnumMap<>(Direction.class);
-        neighborChunkIds.put(Direction.FRONT, null);
-        neighborChunkIds.put(Direction.BACK, null);
-        neighborChunkIds.put(Direction.LEFT, null);
-        neighborChunkIds.put(Direction.RIGHT, null);
-        neighborChunkIds.put(Direction.TOP, null);
-        neighborChunkIds.put(Direction.BOTTOM, null);
+    public void updateChunkNeighbours(Chunk chunk) {
+        Map<Direction, Vector3Key> neighborChunkKeys = new EnumMap<>(Direction.class);
+        neighborChunkKeys.put(Direction.FRONT, null);
+        neighborChunkKeys.put(Direction.BACK, null);
+        neighborChunkKeys.put(Direction.LEFT, null);
+        neighborChunkKeys.put(Direction.RIGHT, null);
+        neighborChunkKeys.put(Direction.TOP, null);
+        neighborChunkKeys.put(Direction.BOTTOM, null);
 
-        for (Chunk neighbourChunk : chunks) {
-            Direction neighborDirection = null;
-            if (neighbourChunk.getZOffset() == chunk.getZOffset() + Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
-                neighborDirection = Direction.FRONT;
-            } else if (neighbourChunk.getZOffset() == chunk.getZOffset() - Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
-                neighborDirection = Direction.BACK;
-            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() + Constants.NOISE_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
-                neighborDirection = Direction.RIGHT;
-            } else if (neighbourChunk.getXOffset() == chunk.getXOffset() - Constants.NOISE_CHUNK_SIZE && neighbourChunk.getZOffset() == chunk.getZOffset() && neighbourChunk.getYOffset() == chunk.getYOffset()) {
-                neighborDirection = Direction.LEFT;
-            } else if (neighbourChunk.getYOffset() == chunk.getYOffset() + Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
-                neighborDirection = Direction.TOP;
-            } else if (neighbourChunk.getYOffset() == chunk.getYOffset() - Constants.NOISE_CHUNK_SIZE && neighbourChunk.getXOffset() == chunk.getXOffset() && neighbourChunk.getZOffset() == chunk.getZOffset()) {
-                neighborDirection = Direction.BOTTOM;
-            }
-            if (neighborDirection != null) {
-                neighborChunkIds.put(neighborDirection, neighbourChunk.getId());
-            }
+        int x = chunk.getXOffset();
+        int y = chunk.getYOffset();
+        int z = chunk.getZOffset();
+
+        Vector3Key rightKey = new Vector3Key(x + Constants.NOISE_CHUNK_SIZE, y, z); // RIGHT
+        Vector3Key leftKey = new Vector3Key(x - Constants.NOISE_CHUNK_SIZE, y, z); // LEFT
+        Vector3Key frontKey = new Vector3Key(x, y, z + Constants.NOISE_CHUNK_SIZE); // FRONT
+        Vector3Key backKey = new Vector3Key(x, y, z - Constants.NOISE_CHUNK_SIZE); // BACK
+        Vector3Key topKey = new Vector3Key(x, y + Constants.NOISE_CHUNK_SIZE, z); // TOP
+        Vector3Key bottomKey = new Vector3Key(x, y - Constants.NOISE_CHUNK_SIZE, z); // BOTTOM
+
+        if (World.chunks.get(rightKey) != null) {
+            neighborChunkKeys.put(Direction.RIGHT, rightKey);
+        }
+        if (World.chunks.get(leftKey) != null) {
+            neighborChunkKeys.put(Direction.LEFT, leftKey);
+        }
+        if (World.chunks.get(frontKey) != null) {
+            neighborChunkKeys.put(Direction.FRONT, frontKey);
+        }
+        if (World.chunks.get(backKey) != null) {
+            neighborChunkKeys.put(Direction.BACK, backKey);
+        }
+        if (World.chunks.get(topKey) != null) {
+            neighborChunkKeys.put(Direction.TOP, topKey);
+        }
+        if (World.chunks.get(bottomKey) != null) {
+            neighborChunkKeys.put(Direction.BOTTOM, bottomKey);
         }
 
         Map<Direction, Integer[][][]> neighborChunksData = new EnumMap<>(Direction.class);
@@ -304,8 +324,8 @@ public class NoiseUtil {
         neighborChunksData.put(Direction.TOP, null);
         neighborChunksData.put(Direction.BOTTOM, null);
 
-        neighborChunkIds.forEach(((direction, id) -> {
-            if (id == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
+        neighborChunkKeys.forEach(((direction, key) -> {
+            if (key == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
                 int dx = chunk.getXOffset();
                 int dz = chunk.getZOffset();
                 switch (direction) {
@@ -326,6 +346,6 @@ public class NoiseUtil {
             }
         }));
         chunk.setNeighborChunksData(neighborChunksData);
-        chunk.setNeighborChunkIds(neighborChunkIds);
+        chunk.setNeighborChunkKeys(neighborChunkKeys);
     }
 }
