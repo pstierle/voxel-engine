@@ -7,7 +7,7 @@ import dev.dewy.nbt.tags.collection.CompoundTag;
 import dev.dewy.nbt.tags.collection.ListTag;
 import dev.dewy.nbt.tags.primitive.IntTag;
 import dev.dewy.nbt.tags.primitive.StringTag;
-import voxelengine.core.Renderer;
+import voxelengine.core.State;
 import voxelengine.examples.World;
 import voxelengine.util.voxel.Color;
 
@@ -25,12 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 public class NbtUtil {
-    private final Renderer renderer;
-
-    public NbtUtil(Renderer renderer) {
-        this.renderer = renderer;
-    }
-
     public void loadWorld() {
         List<Chunk> chunks = new ArrayList<>();
 
@@ -158,7 +152,7 @@ public class NbtUtil {
         for (int i = 0; i < chunks.size(); i++) {
             Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
             chunks.get(i).loadData();
-            chunks.get(i).loadBuffers(this.renderer.getProgramId());
+            chunks.get(i).loadBuffers(State.renderer.getProgramId());
             World.chunks.put(new Vector3Key(chunks.get(i).getXOffset(), chunks.get(i).getYOffset(), chunks.get(i).getZOffset()), chunks.get(i));
         }
     }

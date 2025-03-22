@@ -50,18 +50,16 @@ public class Renderer {
     private int lightPositionLocation;
     private int cameraPositionLocation;
 
-    private final Statistic statistic;
-
-    public Renderer(Statistic statistic) {
-        this.statistic = statistic;
-    }
-
     public int getProgramId() {
         return programId;
     }
 
     public int getViewLocation() {
         return viewLocation;
+    }
+
+    public int getFrameCount() {
+        return frameCount;
     }
 
     public int getProjectionLocation() {
@@ -179,7 +177,6 @@ public class Renderer {
         double lastFpsTime = currentFrameTime - this.fpsTimer;
 
         if (lastFpsTime >= 1) {
-            this.statistic.setFps(this.frameCount);
             this.fpsTimer = currentFrameTime;
             this.frameCount = 0;
         }

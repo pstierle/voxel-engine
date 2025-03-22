@@ -6,36 +6,24 @@ import org.joml.Vector4d;
 import org.lwjgl.BufferUtils;
 import voxelengine.util.Constants;
 import voxelengine.util.WorldType;
-import voxelengine.window.Window;
 
 import java.nio.FloatBuffer;
 
-import static org.lwjgl.opengl.GL20C.glUniform3fv;
-import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
+import static org.lwjgl.opengl.GL20.glUniform3fv;
+import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 
 public class Camera {
-    private static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
-    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 50.0;
     private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
-    private final Vector3d position = new Vector3d(0, 100, 0);
+    public final Vector3d position = new Vector3d(0, 100, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
     private Matrix4d viewMatrix = new Matrix4d();
     private Matrix4d projectionMatrix = new Matrix4d();
     private Vector4d[] frustumPlanes = new Vector4d[6];
-
-    private Renderer renderer;
-    private Window window;
-    private Statistic statistic;
-
     private double yaw = 0;
     private double pitch = 0;
 
-    public void init(Renderer renderer, Window window, Statistic statistic) {
-        this.statistic = statistic;
-        this.renderer = renderer;
-        this.window = window;
-
+    public Camera() {
         for (int i = 0; i < 6; i++) {
             frustumPlanes[i] = new Vector4d();
         }
@@ -58,21 +46,21 @@ public class Camera {
     }
 
     public boolean isOnFrustum(int positionX, int positionY, int positionZ) {
-        int height = CHUNK_SIZE;
+        int height = State.CHUNK_SIZE;
         if (Constants.WORLD_TYPE == WorldType.NOISE) {
             height *= 2;
         }
         Vector3d[] corners = new Vector3d[8];
         // Bottom corners
         corners[0] = new Vector3d(positionX, positionY, positionZ);
-        corners[1] = new Vector3d(positionX + CHUNK_SIZE, positionY, positionZ);
-        corners[2] = new Vector3d(positionX + CHUNK_SIZE, positionY, positionZ + CHUNK_SIZE);
-        corners[3] = new Vector3d(positionX, positionY, positionZ + CHUNK_SIZE);
+        corners[1] = new Vector3d(positionX + State.CHUNK_SIZE, positionY, positionZ);
+        corners[2] = new Vector3d(positionX + State.CHUNK_SIZE, positionY, positionZ + State.CHUNK_SIZE);
+        corners[3] = new Vector3d(positionX, positionY, positionZ + State.CHUNK_SIZE);
         // Top corners
         corners[4] = new Vector3d(positionX, positionY + height, positionZ);
-        corners[5] = new Vector3d(positionX + CHUNK_SIZE, positionY + height, positionZ);
-        corners[6] = new Vector3d(positionX + CHUNK_SIZE, positionY + height, positionZ + CHUNK_SIZE);
-        corners[7] = new Vector3d(positionY, positionY + height, positionZ + CHUNK_SIZE);
+        corners[5] = new Vector3d(positionX + State.CHUNK_SIZE, positionY + height, positionZ);
+        corners[6] = new Vector3d(positionX + State.CHUNK_SIZE, positionY + height, positionZ + State.CHUNK_SIZE);
+        corners[7] = new Vector3d(positionY, positionY + height, positionZ + State.CHUNK_SIZE);
 
         for (int i = 0; i < 6; i++) {
             boolean allCornersOutside = true;
@@ -97,31 +85,31 @@ public class Camera {
     }
 
     public void update() {
-        double deltaTime = this.renderer.getDeltaTime();
+        double deltaTime = State.renderer.getDeltaTime();
 
-        if (this.window.getKeyboard().isWPressed()) {
+        if (State.window.getKeyboard().isWPressed()) {
             Vector3d intermediate = new Vector3d();
-            this.front.mul(CAMERA_SPEED * deltaTime, intermediate);
+            this.front.mul(State.CAMERA_SPEED * deltaTime, intermediate);
             this.position.add(intermediate);
         }
 
-        if (this.window.getKeyboard().isSPressed()) {
+        if (State.window.getKeyboard().isSPressed()) {
             Vector3d intermediate = new Vector3d();
-            this.front.mul(CAMERA_SPEED * deltaTime, intermediate);
+            this.front.mul(State.CAMERA_SPEED * deltaTime, intermediate);
             this.position.sub(intermediate);
         }
 
-        if (this.window.getKeyboard().isDPressed()) {
+        if (State.window.getKeyboard().isDPressed()) {
             Vector3d right = new Vector3d();
             this.front.cross(this.up, right).normalize();
-            right.mul(CAMERA_SPEED * deltaTime, right);
+            right.mul(State.CAMERA_SPEED * deltaTime, right);
             this.position.add(right);
         }
 
-        if (this.window.getKeyboard().isAPressed()) {
+        if (State.window.getKeyboard().isAPressed()) {
             Vector3d left = new Vector3d();
             this.front.cross(this.up, left).normalize();
-            left.mul(CAMERA_SPEED * deltaTime, left);
+            left.mul(State.CAMERA_SPEED * deltaTime, left);
             this.position.sub(left);
         }
 
@@ -142,20 +130,20 @@ public class Camera {
 
         this.viewMatrix.lookAt(this.position, center, this.up);
 
-        double aspectRatio = (double) this.window.getWidth() / this.window.getHeight();
+        double aspectRatio = (double) State.window.getWidth() / State.window.getHeight();
         this.projectionMatrix.perspective(Math.toRadians(Constants.CAMERA_FOV), aspectRatio, 0.1, 10000);
 
         FloatBuffer viewDest = BufferUtils.createFloatBuffer(16);
         this.viewMatrix.get(viewDest);
-        glUniformMatrix4fv(this.renderer.getViewLocation(), false, viewDest);
+        glUniformMatrix4fv(State.renderer.getViewLocation(), false, viewDest);
 
         FloatBuffer projectionDest = BufferUtils.createFloatBuffer(16);
         this.projectionMatrix.get(projectionDest);
-        glUniformMatrix4fv(this.renderer.getProjectionLocation(), false, projectionDest);
+        glUniformMatrix4fv(State.renderer.getProjectionLocation(), false, projectionDest);
 
         FloatBuffer cameraDest = BufferUtils.createFloatBuffer(3);
         this.position.get(cameraDest);
-        glUniform3fv(this.renderer.getCameraPositionLocation(), cameraDest);
+        glUniform3fv(State.renderer.getCameraPositionLocation(), cameraDest);
 
         Matrix4d viewProjection = new Matrix4d(projectionMatrix).mul(viewMatrix);
 
@@ -202,7 +190,6 @@ public class Camera {
                 viewProjection.m33() - viewProjection.m32());
 
         normalizePlanes();
-        this.statistic.setCameraPosition(this.position);
     }
 
 

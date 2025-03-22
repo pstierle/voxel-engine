@@ -1,12 +1,8 @@
 package voxelengine.examples;
 
-import voxelengine.core.Camera;
-import voxelengine.core.Renderer;
-import voxelengine.core.Statistic;
+import voxelengine.core.State;
 import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
-import voxelengine.util.NbtUtil;
-import voxelengine.util.NoiseUtil;
 import voxelengine.util.Vector3Key;
 import voxelengine.util.WorldType;
 
@@ -18,47 +14,37 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class World implements BaseExample {
-    private static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
+public class World {
     private static final long UPDATE_INTERVAL = 100_000_000;
-    private final AtomicLong lastUpdateTime = new AtomicLong(0);
-    private boolean isUpdating = false;
-    private Renderer renderer;
-    private NoiseUtil noiseUtil;
     public static final Map<Vector3Key, Chunk> chunks = new ConcurrentHashMap<>();
-    private Camera camera;
-    private final Statistic statistic;
+    private final AtomicLong lastUpdateTime = new AtomicLong(0);
     private ExecutorService threadPool;
+    private boolean isUpdating = false;
     private int lastPlayerChunkX = 0;
     private int lastPlayerChunkZ = 0;
+    private int renderedChunks = 0;
 
-    public World(Statistic statistic) {
-        this.statistic = statistic;
+    public int getRenderedChunks() {
+        return renderedChunks;
     }
 
-    @Override
-    public void init(Renderer renderer, Camera camera) {
-        this.renderer = renderer;
-        this.camera = camera;
-        this.noiseUtil = new NoiseUtil(renderer, camera);
-
+    public void init() {
         int processorCount = Runtime.getRuntime().availableProcessors();
         threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
 
         if (Constants.WORLD_TYPE == WorldType.NBT) {
-            new NbtUtil(renderer).loadWorld();
+            State.nbtUtil.loadWorld();
         } else {
-            this.noiseUtil.loadWorld();
-            this.lastPlayerChunkX = this.camera.getChunkX();
-            this.lastPlayerChunkZ = this.camera.getChunkZ();
+            State.noiseUtil.loadWorld();
+            this.lastPlayerChunkX = State.camera.getChunkX();
+            this.lastPlayerChunkZ = State.camera.getChunkZ();
         }
 
         if (Constants.OPTIMIZATION_SHADER_MEMORY) {
-            this.renderer.setColorUBO();
+            State.renderer.setColorUBO();
         }
     }
 
-    @Override
     public void update() {
         long currentTime = System.nanoTime();
         if (currentTime - lastUpdateTime.get() < UPDATE_INTERVAL || isUpdating) {
@@ -84,8 +70,8 @@ public class World implements BaseExample {
             return;
         }
 
-        int playerChunkX = this.camera.getChunkX();
-        int playerChunkZ = this.camera.getChunkZ();
+        int playerChunkX = State.camera.getChunkX();
+        int playerChunkZ = State.camera.getChunkZ();
 
         boolean playerMoved = playerChunkX != lastPlayerChunkX || playerChunkZ != lastPlayerChunkZ;
         if (!playerMoved) {
@@ -99,8 +85,8 @@ public class World implements BaseExample {
 
         for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
             for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
-                int[][] heightMap = noiseUtil.generateHeightMap(dx, dz);
-                int maxHeight = noiseUtil.heightMapMaxHeight(heightMap);
+                int[][] heightMap = State.noiseUtil.generateHeightMap(dx, dz);
+                int maxHeight = State.noiseUtil.heightMapMaxHeight(heightMap);
                 for (int dy = 0; dy <= maxHeight; dy += Constants.NOISE_CHUNK_SIZE) {
                     neededKeys.add(new Vector3Key(dx, dy, dz));
                 }
@@ -118,51 +104,45 @@ public class World implements BaseExample {
         for (Vector3Key chunkKey : neededKeys) {
             if (World.chunks.get(chunkKey) == null) {
                 Chunk chunk = new Chunk(chunkKey.getX(), chunkKey.getY(), chunkKey.getZ());
-                int[][] heightMap = this.noiseUtil.generateHeightMap(chunkKey.getX(), chunkKey.getZ());
-                chunk.setData(this.noiseUtil.heightMapSlice(heightMap, chunkKey.getY()));
+                int[][] heightMap = State.noiseUtil.generateHeightMap(chunkKey.getX(), chunkKey.getZ());
+                chunk.setData(State.noiseUtil.heightMapSlice(heightMap, chunkKey.getY()));
                 newChunks.add(chunk);
                 World.chunks.put(new Vector3Key(chunk.getXOffset(), chunk.getYOffset(), chunk.getZOffset()), chunk);
             }
         }
 
         for (Chunk chunk : newChunks) {
-            noiseUtil.updateChunkNeighbours(chunk);
+            State.noiseUtil.updateChunkNeighbours(chunk);
             chunk.loadData();
             chunk.setNeedsBufferLoad(true);
         }
     }
 
-    @Override
     public void render() {
-        int renderCount = 0;
-
+        this.renderedChunks = 0;
         for (Chunk chunk : World.chunks.values()) {
-            try {
-                if (chunk.needsBufferLoad()) {
-                    chunk.loadBuffers(this.renderer.getProgramId());
-                }
-                if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
-                    boolean isOnFrustum = this.camera.isOnFrustum(
-                            chunk.getXOffset(),
-                            chunk.getYOffset(),
-                            chunk.getZOffset());
-                    if (isOnFrustum) {
-                        chunk.render();
-                        renderCount++;
-                    }
-                } else {
+            if (chunk.needsBufferLoad()) {
+                chunk.loadBuffers(State.renderer.getProgramId());
+            }
+            if (Constants.OPTIMIZATION_FRUSTUM_CULLING) {
+                boolean isOnFrustum = State.camera.isOnFrustum(
+                        chunk.getXOffset(),
+                        chunk.getYOffset(),
+                        chunk.getZOffset());
+                if (isOnFrustum) {
                     chunk.render();
-                    renderCount++;
+                    this.renderedChunks++;
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else {
+                chunk.render();
+                this.renderedChunks++;
             }
         }
-        this.statistic.setRenderedChunkCount(renderCount);
     }
 
-    @Override
     public void destroy() {
-
+        if (threadPool != null) {
+            threadPool.shutdownNow();
+        }
     }
 }

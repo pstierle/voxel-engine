@@ -1,8 +1,7 @@
 package voxelengine.window;
 
 import org.lwjgl.opengl.GL;
-import voxelengine.core.Camera;
-import voxelengine.core.Renderer;
+import voxelengine.core.State;
 import voxelengine.window.input.Keyboard;
 import voxelengine.window.input.Mouse;
 
@@ -48,8 +47,6 @@ public class Window {
     private int height = 900;
     private final Mouse mouse = new Mouse((double) this.width / 2, (double) this.height / 2);
     private final Keyboard keyboard = new Keyboard();
-    private Camera camera;
-    private Renderer renderer;
 
     public Keyboard getKeyboard() {
         return keyboard;
@@ -65,11 +62,6 @@ public class Window {
 
     public int getHeight() {
         return height;
-    }
-
-    public void init(Camera camera, Renderer renderer) {
-        this.camera = camera;
-        this.renderer = renderer;
     }
 
     public void init() {
@@ -98,17 +90,16 @@ public class Window {
                 this.mouse.setFirstMouseMoveHandled(true);
             }
 
-            this.camera.handleMouseMove(this.mouse.getPosition().x, xpos, this.mouse.getPosition().y, ypos);
+            State.camera.handleMouseMove(this.mouse.getPosition().x, xpos, this.mouse.getPosition().y, ypos);
             this.mouse.setPosition(xpos, ypos);
         });
 
         glfwSetKeyCallback(this.handle, (window, key, scancode, action, mods) -> {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 glfwSetWindowShouldClose(window, true);
-                System.exit(0);
             }
             if (key == GLFW_KEY_U && action == GLFW_RELEASE) {
-                this.renderer.toggleWireframe();
+                State.renderer.toggleWireframe();
             }
         });
 

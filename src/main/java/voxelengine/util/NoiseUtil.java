@@ -1,7 +1,6 @@
 package voxelengine.util;
 
-import voxelengine.core.Camera;
-import voxelengine.core.Renderer;
+import voxelengine.core.State;
 import voxelengine.examples.World;
 
 import java.util.ArrayList;
@@ -19,13 +18,11 @@ public class NoiseUtil {
     private final FastNoiseLite largeFeatureNoise;
     private final FastNoiseLite biomeNoise;
     private final FastNoiseLite erosionNoise;
-    private final Renderer renderer;
-    private final Camera camera;
 
     private final Map<VectorXZKey, int[][]> heightMapCache = new ConcurrentHashMap<>();
     private static final int HEIGHT_MAP_CACHE_SIZE = 64;
 
-    public NoiseUtil(Renderer renderer, Camera camera) {
+    public NoiseUtil() {
         this.baseNoise = new FastNoiseLite(Constants.NOISE_WORLD_SEED);
         this.baseNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         this.baseNoise.SetFrequency(0.01f);
@@ -49,9 +46,6 @@ public class NoiseUtil {
         this.erosionNoise.SetFrequency(0.04f);
         this.erosionNoise.SetFractalType(FastNoiseLite.FractalType.Ridged);
         this.erosionNoise.SetFractalOctaves(3);
-
-        this.renderer = renderer;
-        this.camera = camera;
     }
 
     public int[][] generateHeightMap(int chunkOffsetX, int chunkOffsetZ) {
@@ -210,8 +204,8 @@ public class NoiseUtil {
     }
 
     public void loadWorld() {
-        int playerChunkX = this.camera.getChunkX();
-        int playerChunkZ = this.camera.getChunkZ();
+        int playerChunkX = State.camera.getChunkX();
+        int playerChunkZ = State.camera.getChunkZ();
 
         List<Chunk> chunks = new ArrayList<>();
 
@@ -232,7 +226,7 @@ public class NoiseUtil {
             Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
             updateChunkNeighbours(chunks.get(i));
             chunks.get(i).loadData();
-            chunks.get(i).loadBuffers(this.renderer.getProgramId());
+            chunks.get(i).loadBuffers(State.renderer.getProgramId());
         }
     }
 
