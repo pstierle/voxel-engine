@@ -3,6 +3,7 @@ package voxelengine.examples;
 import voxelengine.core.State;
 import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
+import voxelengine.util.Log;
 import voxelengine.util.Vector3Key;
 import voxelengine.util.WorldType;
 
@@ -12,26 +13,25 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class World {
+    private static final int PROCESSOR_COUNT = Runtime.getRuntime().availableProcessors();
     private static final long UPDATE_INTERVAL = 100_000_000;
     public static final Map<Vector3Key, Chunk> chunks = new ConcurrentHashMap<>();
-    private final AtomicLong lastUpdateTime = new AtomicLong(0);
+    private long lastUpdateTime = 0;
     private ExecutorService threadPool;
     private boolean isUpdating = false;
     private int lastPlayerChunkX = 0;
     private int lastPlayerChunkZ = 0;
     private int renderedChunks = 0;
+    private boolean initialWorldLoaded = false;
 
     public int getRenderedChunks() {
         return renderedChunks;
     }
 
     public void init() {
-        int processorCount = Runtime.getRuntime().availableProcessors();
-        threadPool = Executors.newFixedThreadPool(Math.max(1, processorCount - 1));
-
+        threadPool = Executors.newFixedThreadPool(PROCESSOR_COUNT);
         if (Constants.WORLD_TYPE == WorldType.NBT) {
             State.nbtUtil.loadWorld();
         } else {
@@ -39,21 +39,48 @@ public class World {
             this.lastPlayerChunkX = State.camera.getChunkX();
             this.lastPlayerChunkZ = State.camera.getChunkZ();
         }
-
+        Log.info("World loaded");
         if (Constants.OPTIMIZATION_SHADER_MEMORY) {
             State.renderer.setColorUBO();
         }
+        threadPool.submit(() -> {
+            try {
+                List<Chunk> sortedChunks = new ArrayList<>(chunks.values());
+                sortedChunks.sort((chunk1, chunk2) -> {
+                    int distance1 = calculateDistanceToPlayer(chunk1);
+                    int distance2 = calculateDistanceToPlayer(chunk2);
+                    return Integer.compare(distance1, distance2);
+                });
+                for (Chunk chunk : sortedChunks) {
+                    chunk.loadNeighbors();
+                    chunk.loadData();
+                    chunk.setNeedsBufferLoad(true);
+                }
+            } finally {
+                initialWorldLoaded = true;
+            }
+        });
+    }
+
+    private int calculateDistanceToPlayer(Chunk chunk) {
+        int dx = chunk.getXOffset() - lastPlayerChunkX;
+        int dz = chunk.getZOffset() - lastPlayerChunkZ;
+        return dx * dx + dz * dz;
     }
 
     public void update() {
-        long currentTime = System.nanoTime();
-        if (currentTime - lastUpdateTime.get() < UPDATE_INTERVAL || isUpdating) {
+        if (!initialWorldLoaded) {
             return;
         }
-
+        if (Constants.WORLD_TYPE == WorldType.NBT) {
+            return;
+        }
+        long currentTime = System.nanoTime();
+        if (currentTime - lastUpdateTime < UPDATE_INTERVAL || isUpdating) {
+            return;
+        }
         isUpdating = true;
-        lastUpdateTime.set(currentTime);
-
+        lastUpdateTime = currentTime;
         threadPool.submit(() -> {
             try {
                 if (Constants.WORLD_TYPE == WorldType.NOISE) {
@@ -66,10 +93,6 @@ public class World {
     }
 
     private void updateNoiseChunks() {
-        if (Constants.WORLD_TYPE == WorldType.NBT) {
-            return;
-        }
-
         int playerChunkX = State.camera.getChunkX();
         int playerChunkZ = State.camera.getChunkZ();
 
@@ -112,7 +135,7 @@ public class World {
         }
 
         for (Chunk chunk : newChunks) {
-            State.noiseUtil.updateChunkNeighbours(chunk);
+            chunk.loadNeighbors();
             chunk.loadData();
             chunk.setNeedsBufferLoad(true);
         }

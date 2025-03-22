@@ -1,6 +1,4 @@
-package voxelengine.core;
-
-import voxelengine.util.Log;
+package voxelengine.util;
 
 import java.io.IOException;
 import java.io.InputStream;

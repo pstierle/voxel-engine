@@ -2,10 +2,14 @@ package voxelengine.util;
 
 import voxelengine.util.voxel.Color;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ColorUtil {
-    public static List<Color> nbtColors;
+    private ColorUtil() {
+    }
+
+    public static final List<Color> nbtColors = new ArrayList<>();
     public static final Color WATER_COLOR = new Color(0.1f, 0.3f, 0.8f);
     public static final Color SAND_COLOR = new Color(0.95f, 0.87f, 0.7f);
     public static final Color MOUNTAIN_COLOR = new Color(0.55f, 0.55f, 0.55f);

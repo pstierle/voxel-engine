@@ -1,6 +1,7 @@
 package voxelengine.util;
 
 import org.joml.Vector3d;
+import voxelengine.core.State;
 import voxelengine.examples.World;
 import voxelengine.util.voxel.Color;
 import voxelengine.util.voxel.Voxel;
@@ -10,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.EnumMap;
 import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
@@ -31,16 +33,13 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Chunk {
     public static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
-    private static int nextId = 0;
-    private int id;
     private final Voxel baseVoxel = new Voxel();
     private int vboId;
     private int vaoId;
     private int eboId;
-    private int xOffset;
-    private int yOffset;
-    private int zOffset;
-
+    private final int xOffset;
+    private final int yOffset;
+    private final int zOffset;
     private int numVoxels;
     private int indicesCount;
     private FloatBuffer verticesBuffer;
@@ -48,12 +47,8 @@ public class Chunk {
     private Integer[][][] data;
     private boolean needsBufferLoad = false;
     private boolean needsAttributeLoad = true;
-    private Map<Direction, Vector3Key> neighborChunkKeys;
-    private Map<Direction, Integer[][][]> neighborChunksData;
-
-    public int getId() {
-        return id;
-    }
+    private final Map<Direction, Vector3Key> neighborChunkKeys = new EnumMap<>(Direction.class);
+    private final Map<Direction, Integer[][][]> neighborChunksData = new EnumMap<>(Direction.class);
 
     public int getXOffset() {
         return xOffset;
@@ -75,10 +70,6 @@ public class Chunk {
         return needsBufferLoad;
     }
 
-    public void setNeighborChunksData(Map<Direction, Integer[][][]> neighborChunksData) {
-        this.neighborChunksData = neighborChunksData;
-    }
-
     public void setData(Integer[][][] data) {
         this.data = data;
     }
@@ -87,12 +78,7 @@ public class Chunk {
         return data;
     }
 
-    public void setNeighborChunkKeys(Map<Direction, Vector3Key> neighborChunkKeys) {
-        this.neighborChunkKeys = neighborChunkKeys;
-    }
-
     public Chunk(int chunkOffsetX, int chunkOffsetY, int chunkOffsetZ) {
-        this.id = nextId++;
         this.xOffset = chunkOffsetX;
         this.yOffset = chunkOffsetY;
         this.zOffset = chunkOffsetZ;
@@ -283,6 +269,72 @@ public class Chunk {
         }
 
         return vertices;
+    }
+
+    public void loadNeighbors() {
+        this.neighborChunkKeys.put(Direction.FRONT, null);
+        this.neighborChunkKeys.put(Direction.BACK, null);
+        this.neighborChunkKeys.put(Direction.LEFT, null);
+        this.neighborChunkKeys.put(Direction.RIGHT, null);
+        this.neighborChunkKeys.put(Direction.TOP, null);
+        this.neighborChunkKeys.put(Direction.BOTTOM, null);
+
+        Vector3Key rightKey = new Vector3Key(this.xOffset + CHUNK_SIZE, this.yOffset, this.zOffset); // RIGHT
+        Vector3Key leftKey = new Vector3Key(this.xOffset - CHUNK_SIZE, this.yOffset, this.zOffset); // LEFT
+        Vector3Key frontKey = new Vector3Key(this.xOffset, this.yOffset, this.zOffset + CHUNK_SIZE); // FRONT
+        Vector3Key backKey = new Vector3Key(this.xOffset, this.yOffset, this.zOffset - CHUNK_SIZE); // BACK
+        Vector3Key topKey = new Vector3Key(this.xOffset, this.yOffset + CHUNK_SIZE, this.zOffset); // TOP
+        Vector3Key bottomKey = new Vector3Key(this.xOffset, this.yOffset - CHUNK_SIZE, this.zOffset); // BOTTOM
+
+        if (World.chunks.get(rightKey) != null) {
+            this.neighborChunkKeys.put(Direction.RIGHT, rightKey);
+        }
+        if (World.chunks.get(leftKey) != null) {
+            this.neighborChunkKeys.put(Direction.LEFT, leftKey);
+        }
+        if (World.chunks.get(frontKey) != null) {
+            this.neighborChunkKeys.put(Direction.FRONT, frontKey);
+        }
+        if (World.chunks.get(backKey) != null) {
+            this.neighborChunkKeys.put(Direction.BACK, backKey);
+        }
+        if (World.chunks.get(topKey) != null) {
+            this.neighborChunkKeys.put(Direction.TOP, topKey);
+        }
+        if (World.chunks.get(bottomKey) != null) {
+            this.neighborChunkKeys.put(Direction.BOTTOM, bottomKey);
+        }
+
+        if (Constants.WORLD_TYPE == WorldType.NOISE) {
+            this.neighborChunksData.put(Direction.FRONT, null);
+            this.neighborChunksData.put(Direction.BACK, null);
+            this.neighborChunksData.put(Direction.LEFT, null);
+            this.neighborChunksData.put(Direction.RIGHT, null);
+            this.neighborChunksData.put(Direction.TOP, null);
+            this.neighborChunksData.put(Direction.BOTTOM, null);
+
+            this.neighborChunkKeys.forEach(((direction, key) -> {
+                if (key == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
+                    int dx = this.xOffset;
+                    int dz = this.zOffset;
+                    switch (direction) {
+                        case FRONT:
+                            dz += Constants.NOISE_CHUNK_SIZE;
+                            break;
+                        case BACK:
+                            dz -= Constants.NOISE_CHUNK_SIZE;
+                            break;
+                        case LEFT:
+                            dx -= Constants.NOISE_CHUNK_SIZE;
+                            break;
+                        case RIGHT:
+                            dx += Constants.NOISE_CHUNK_SIZE;
+                            break;
+                    }
+                    neighborChunksData.put(direction, State.noiseUtil.heightMapSlice(State.noiseUtil.generateHeightMap(dx, dz), this.yOffset));
+                }
+            }));
+        }
     }
 
     public void loadBuffers(int programId) {

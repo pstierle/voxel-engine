@@ -1,4 +1,4 @@
-package voxelengine.util;
+package voxelengine.worldgen;
 
 // MIT License
 //

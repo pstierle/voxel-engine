@@ -1,11 +1,13 @@
-package voxelengine.util;
+package voxelengine.worldgen;
 
 import voxelengine.core.State;
 import voxelengine.examples.World;
+import voxelengine.util.Chunk;
+import voxelengine.util.ColorUtil;
+import voxelengine.util.Constants;
+import voxelengine.util.Vector3Key;
+import voxelengine.util.VectorXZKey;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,6 +48,23 @@ public class NoiseUtil {
         this.erosionNoise.SetFrequency(0.04f);
         this.erosionNoise.SetFractalType(FastNoiseLite.FractalType.Ridged);
         this.erosionNoise.SetFractalOctaves(3);
+    }
+
+    public void loadWorld() {
+        int playerChunkX = State.camera.getChunkX();
+        int playerChunkZ = State.camera.getChunkZ();
+
+        for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
+            for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
+                int[][] heightMap = generateHeightMap(dx, dz);
+                int maxHeight = heightMapMaxHeight(heightMap);
+                for (int dy = 0; dy <= maxHeight; dy += Constants.NOISE_CHUNK_SIZE) {
+                    Chunk chunk = new Chunk(dx, dy, dz);
+                    chunk.setData(heightMapSlice(heightMap, dy));
+                    World.chunks.put(new Vector3Key(dx, dy, dz), chunk);
+                }
+            }
+        }
     }
 
     public int[][] generateHeightMap(int chunkOffsetX, int chunkOffsetZ) {
@@ -203,33 +222,6 @@ public class NoiseUtil {
         }
     }
 
-    public void loadWorld() {
-        int playerChunkX = State.camera.getChunkX();
-        int playerChunkZ = State.camera.getChunkZ();
-
-        List<Chunk> chunks = new ArrayList<>();
-
-        for (int dx = playerChunkX - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx <= playerChunkX + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dx += Constants.NOISE_CHUNK_SIZE) {
-            for (int dz = playerChunkZ - Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz <= playerChunkZ + Constants.NOISE_CHUNK_RADIUS * Constants.NOISE_CHUNK_SIZE; dz += Constants.NOISE_CHUNK_SIZE) {
-                int[][] heightMap = generateHeightMap(dx, dz);
-                int maxHeight = heightMapMaxHeight(heightMap);
-                for (int dy = 0; dy <= maxHeight; dy += Constants.NOISE_CHUNK_SIZE) {
-                    Chunk chunk = new Chunk(dx, dy, dz);
-                    chunk.setData(heightMapSlice(heightMap, dy));
-                    chunks.add(chunk);
-                    World.chunks.put(new Vector3Key(dx, dy, dz), chunk);
-                }
-            }
-        }
-
-        for (int i = 0; i < chunks.size(); i++) {
-            Log.info(String.format("Loaded chunk %d/%d", i + 1, chunks.size()));
-            updateChunkNeighbours(chunks.get(i));
-            chunks.get(i).loadData();
-            chunks.get(i).loadBuffers(State.renderer.getProgramId());
-        }
-    }
-
     public int heightMapMaxHeight(int[][] heightMap) {
         int maxHeight = 0;
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
@@ -269,77 +261,5 @@ public class NoiseUtil {
             }
         }
         return data;
-    }
-
-    public void updateChunkNeighbours(Chunk chunk) {
-        Map<Direction, Vector3Key> neighborChunkKeys = new EnumMap<>(Direction.class);
-        neighborChunkKeys.put(Direction.FRONT, null);
-        neighborChunkKeys.put(Direction.BACK, null);
-        neighborChunkKeys.put(Direction.LEFT, null);
-        neighborChunkKeys.put(Direction.RIGHT, null);
-        neighborChunkKeys.put(Direction.TOP, null);
-        neighborChunkKeys.put(Direction.BOTTOM, null);
-
-        int x = chunk.getXOffset();
-        int y = chunk.getYOffset();
-        int z = chunk.getZOffset();
-
-        Vector3Key rightKey = new Vector3Key(x + Constants.NOISE_CHUNK_SIZE, y, z); // RIGHT
-        Vector3Key leftKey = new Vector3Key(x - Constants.NOISE_CHUNK_SIZE, y, z); // LEFT
-        Vector3Key frontKey = new Vector3Key(x, y, z + Constants.NOISE_CHUNK_SIZE); // FRONT
-        Vector3Key backKey = new Vector3Key(x, y, z - Constants.NOISE_CHUNK_SIZE); // BACK
-        Vector3Key topKey = new Vector3Key(x, y + Constants.NOISE_CHUNK_SIZE, z); // TOP
-        Vector3Key bottomKey = new Vector3Key(x, y - Constants.NOISE_CHUNK_SIZE, z); // BOTTOM
-
-        if (World.chunks.get(rightKey) != null) {
-            neighborChunkKeys.put(Direction.RIGHT, rightKey);
-        }
-        if (World.chunks.get(leftKey) != null) {
-            neighborChunkKeys.put(Direction.LEFT, leftKey);
-        }
-        if (World.chunks.get(frontKey) != null) {
-            neighborChunkKeys.put(Direction.FRONT, frontKey);
-        }
-        if (World.chunks.get(backKey) != null) {
-            neighborChunkKeys.put(Direction.BACK, backKey);
-        }
-        if (World.chunks.get(topKey) != null) {
-            neighborChunkKeys.put(Direction.TOP, topKey);
-        }
-        if (World.chunks.get(bottomKey) != null) {
-            neighborChunkKeys.put(Direction.BOTTOM, bottomKey);
-        }
-
-        Map<Direction, Integer[][][]> neighborChunksData = new EnumMap<>(Direction.class);
-        neighborChunksData.put(Direction.FRONT, null);
-        neighborChunksData.put(Direction.BACK, null);
-        neighborChunksData.put(Direction.LEFT, null);
-        neighborChunksData.put(Direction.RIGHT, null);
-        neighborChunksData.put(Direction.TOP, null);
-        neighborChunksData.put(Direction.BOTTOM, null);
-
-        neighborChunkKeys.forEach(((direction, key) -> {
-            if (key == null && direction != Direction.TOP && direction != Direction.BOTTOM) {
-                int dx = chunk.getXOffset();
-                int dz = chunk.getZOffset();
-                switch (direction) {
-                    case FRONT:
-                        dz += Constants.NOISE_CHUNK_SIZE;
-                        break;
-                    case BACK:
-                        dz -= Constants.NOISE_CHUNK_SIZE;
-                        break;
-                    case LEFT:
-                        dx -= Constants.NOISE_CHUNK_SIZE;
-                        break;
-                    case RIGHT:
-                        dx += Constants.NOISE_CHUNK_SIZE;
-                        break;
-                }
-                neighborChunksData.put(direction, heightMapSlice(generateHeightMap(dx, dz), chunk.getYOffset()));
-            }
-        }));
-        chunk.setNeighborChunksData(neighborChunksData);
-        chunk.setNeighborChunkKeys(neighborChunkKeys);
     }
 }

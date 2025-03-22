@@ -6,6 +6,7 @@ import voxelengine.examples.ExampleType;
 import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
 import voxelengine.util.Direction;
+import voxelengine.util.Shader;
 import voxelengine.util.WorldType;
 import voxelengine.util.voxel.Color;
 

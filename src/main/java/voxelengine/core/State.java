@@ -2,10 +2,9 @@ package voxelengine.core;
 
 import voxelengine.examples.World;
 import voxelengine.util.Constants;
-import voxelengine.util.NbtUtil;
-import voxelengine.util.NoiseUtil;
 import voxelengine.util.WorldType;
-import voxelengine.window.Window;
+import voxelengine.worldgen.NbtUtil;
+import voxelengine.worldgen.NoiseUtil;
 
 public class State {
     private State() {

@@ -1,9 +1,7 @@
-package voxelengine.window;
+package voxelengine.core;
 
+import org.joml.Vector2d;
 import org.lwjgl.opengl.GL;
-import voxelengine.core.State;
-import voxelengine.window.input.Keyboard;
-import voxelengine.window.input.Mouse;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
@@ -45,12 +43,12 @@ public class Window {
     private long handle;
     private int width = 1600;
     private int height = 900;
-    private final Mouse mouse = new Mouse((double) this.width / 2, (double) this.height / 2);
-    private final Keyboard keyboard = new Keyboard();
-
-    public Keyboard getKeyboard() {
-        return keyboard;
-    }
+    private final Vector2d mousePosition = new Vector2d((double) this.width / 2, (double) this.height / 2);
+    private boolean firstMouseMoveHandled = false;
+    public boolean wPressed = false;
+    public boolean aPressed = false;
+    public boolean sPressed = false;
+    public boolean dPressed = false;
 
     public long getHandle() {
         return handle;
@@ -85,13 +83,12 @@ public class Window {
         glfwSetInputMode(this.handle, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 
         glfwSetCursorPosCallback(this.handle, (long window, double xpos, double ypos) -> {
-            if (!this.mouse.isFirstMouseMoveHandled()) {
-                this.mouse.setPosition(xpos, ypos);
-                this.mouse.setFirstMouseMoveHandled(true);
+            if (!this.firstMouseMoveHandled) {
+                this.mousePosition.set(xpos, ypos);
+                this.firstMouseMoveHandled = true;
             }
-
-            State.camera.handleMouseMove(this.mouse.getPosition().x, xpos, this.mouse.getPosition().y, ypos);
-            this.mouse.setPosition(xpos, ypos);
+            State.camera.handleMouseMove(this.mousePosition.x, xpos, this.mousePosition.y, ypos);
+            this.mousePosition.set(xpos, ypos);
         });
 
         glfwSetKeyCallback(this.handle, (window, key, scancode, action, mods) -> {
@@ -117,29 +114,29 @@ public class Window {
         glfwPollEvents();
 
         if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_PRESS) {
-            this.keyboard.setWPressed(true);
+            this.wPressed = true;
         }
         if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_PRESS) {
-            this.keyboard.setSPressed(true);
+            this.sPressed = true;
         }
         if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_PRESS) {
-            this.keyboard.setAPressed(true);
+            this.aPressed = true;
         }
         if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_PRESS) {
-            this.keyboard.setDPressed(true);
+            this.dPressed = true;
         }
 
         if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_RELEASE) {
-            this.keyboard.setWPressed(false);
+            this.wPressed = false;
         }
         if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_RELEASE) {
-            this.keyboard.setSPressed(false);
+            this.sPressed = false;
         }
         if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_RELEASE) {
-            this.keyboard.setAPressed(false);
+            this.aPressed = false;
         }
         if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_RELEASE) {
-            this.keyboard.setDPressed(false);
+            this.dPressed = false;
         }
     }
 
