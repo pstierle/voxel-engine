@@ -24,6 +24,9 @@ public class Camera {
     private double pitch = 0;
 
     public Camera() {
+        if (Constants.WORLD_TYPE == WorldType.NBT) {
+            this.position.set(Constants.NBT_WORLD.spawnPosition());
+        }
         for (int i = 0; i < 6; i++) {
             frustumPlanes[i] = new Vector4d();
         }

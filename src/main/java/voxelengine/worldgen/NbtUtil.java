@@ -61,7 +61,7 @@ public class NbtUtil {
         File colorsFile = new File(colorsUrl.toURI());
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> colorsMap = objectMapper.readValue(colorsFile, Map.class);
-        URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_FOLDER_PATH);
+        URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_WORLD.folderName());
         Path folderPath = Paths.get(folderUrl.toURI());
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(folderPath)) {
             for (Path entry : stream) {
@@ -84,7 +84,7 @@ public class NbtUtil {
         ExecutorService threadPool = Executors.newFixedThreadPool(State.PROCESSOR_COUNT);
         try {
             loadColors();
-            URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_FOLDER_PATH);
+            URL folderUrl = NbtUtil.class.getClassLoader().getResource(Constants.NBT_WORLD.folderName());
             Path folderPath = Paths.get(folderUrl.toURI());
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(folderPath)) {
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
