@@ -14,7 +14,7 @@ import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 
 public class Camera {
     private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
-    public final Vector3d position = new Vector3d(0, 100, 0);
+    private final Vector3d position = new Vector3d(0, 100, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
     private Matrix4d viewMatrix = new Matrix4d();
@@ -22,6 +22,18 @@ public class Camera {
     private Vector4d[] frustumPlanes = new Vector4d[6];
     private double yaw = 0;
     private double pitch = 0;
+
+    public Vector3d getPosition() {
+        return position;
+    }
+
+    public Vector3d getFront() {
+        return front;
+    }
+
+    public Vector3d getUp() {
+        return up;
+    }
 
     public Camera() {
         if (Constants.WORLD_TYPE == WorldType.NBT) {
@@ -90,30 +102,32 @@ public class Camera {
     public void update() {
         double deltaTime = State.renderer.getDeltaTime();
 
-        if (State.window.wPressed) {
-            Vector3d intermediate = new Vector3d();
-            this.front.mul(State.CAMERA_SPEED * deltaTime, intermediate);
-            this.position.add(intermediate);
-        }
+        if (!State.physics.isPhysicsEnabled()) {
+            if (State.window.wPressed) {
+                Vector3d intermediate = new Vector3d();
+                this.front.mul(State.CAMERA_SPEED * deltaTime, intermediate);
+                this.position.add(intermediate);
+            }
 
-        if (State.window.sPressed) {
-            Vector3d intermediate = new Vector3d();
-            this.front.mul(State.CAMERA_SPEED * deltaTime, intermediate);
-            this.position.sub(intermediate);
-        }
+            if (State.window.sPressed) {
+                Vector3d intermediate = new Vector3d();
+                this.front.mul(State.CAMERA_SPEED * deltaTime, intermediate);
+                this.position.sub(intermediate);
+            }
 
-        if (State.window.dPressed) {
-            Vector3d right = new Vector3d();
-            this.front.cross(this.up, right).normalize();
-            right.mul(State.CAMERA_SPEED * deltaTime, right);
-            this.position.add(right);
-        }
+            if (State.window.dPressed) {
+                Vector3d right = new Vector3d();
+                this.front.cross(this.up, right).normalize();
+                right.mul(State.CAMERA_SPEED * deltaTime, right);
+                this.position.add(right);
+            }
 
-        if (State.window.aPressed) {
-            Vector3d left = new Vector3d();
-            this.front.cross(this.up, left).normalize();
-            left.mul(State.CAMERA_SPEED * deltaTime, left);
-            this.position.sub(left);
+            if (State.window.aPressed) {
+                Vector3d left = new Vector3d();
+                this.front.cross(this.up, left).normalize();
+                left.mul(State.CAMERA_SPEED * deltaTime, left);
+                this.position.sub(left);
+            }
         }
 
         double dirX = Math.cos(Math.toRadians(this.yaw)) * Math.cos(Math.toRadians(this.pitch));

@@ -21,6 +21,7 @@ public class Game {
         while (!glfwWindowShouldClose(State.window.getHandle())) {
             State.window.input();
 
+            State.physics.update();
             State.camera.update();
             State.renderer.update();
             State.world.update();

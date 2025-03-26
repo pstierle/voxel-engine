@@ -25,7 +25,7 @@ public class Statistic {
         Log.info("==== STATS ====");
         Log.info("FPS: " + State.renderer.getFrameCount());
         Log.info("Rendered Chunks: " + State.world.getRenderedChunks());
-        Log.info(String.format("Position: (%s, %s, %s)", State.camera.position.x, State.camera.position.y, State.camera.position.z));
+        Log.info(String.format("Position: (%s, %s, %s)", State.camera.getPosition().x, State.camera.getPosition().y, State.camera.getPosition().z));
     }
 
     public void destroy() {

@@ -21,4 +21,5 @@ public class State {
     public static final World world = new World();
     public static final NoiseUtil noiseUtil = new NoiseUtil();
     public static final NbtUtil nbtUtil = new NbtUtil();
+    public static final Physics physics = new Physics();
 }

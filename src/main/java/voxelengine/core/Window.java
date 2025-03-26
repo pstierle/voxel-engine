@@ -11,7 +11,9 @@ import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_DISABLED;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_O;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_U;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
 import static org.lwjgl.glfw.GLFW.GLFW_LOCK_KEY_MODS;
@@ -49,6 +51,7 @@ public class Window {
     public boolean aPressed = false;
     public boolean sPressed = false;
     public boolean dPressed = false;
+    public boolean spacePressed = false;
 
     public long getHandle() {
         return handle;
@@ -98,6 +101,9 @@ public class Window {
             if (key == GLFW_KEY_U && action == GLFW_RELEASE) {
                 State.renderer.toggleWireframe();
             }
+            if (key == GLFW_KEY_O && action == GLFW_RELEASE) {
+                State.physics.togglePhysics();
+            }
         });
 
         glfwSetFramebufferSizeCallback(this.handle, (long windowHandle, int newWidth, int newHeight) -> {
@@ -125,6 +131,9 @@ public class Window {
         if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_PRESS) {
             this.dPressed = true;
         }
+        if (glfwGetKey(this.handle, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            this.spacePressed = true;
+        }
 
         if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_RELEASE) {
             this.wPressed = false;
@@ -137,6 +146,9 @@ public class Window {
         }
         if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_RELEASE) {
             this.dPressed = false;
+        }
+        if (glfwGetKey(this.handle, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+            this.spacePressed = false;
         }
     }
 
