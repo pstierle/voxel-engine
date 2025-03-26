@@ -235,26 +235,60 @@ public class NoiseUtil {
     public Integer[][][] heightMapSlice(int[][] heightMap, int dy) {
         Integer[][][] data = new Integer[Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE][Constants.NOISE_CHUNK_SIZE];
 
+        // Define more color levels for more interesting terrain
+        final float DEEP_WATER_LEVEL = 5;
+        final float SHALLOW_WATER_LEVEL = 10;
+        final float BEACH_LEVEL = 15;
+        final float PLAINS_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.3f;
+        final float HILLS_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.5f;
+        final float MOUNTAIN_BASE_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
+        final float HIGH_MOUNTAIN_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.8f;
+
         for (int x = 0; x < Constants.NOISE_CHUNK_SIZE; x++) {
             for (int y = 0; y < Constants.NOISE_CHUNK_SIZE; y++) {
                 for (int z = 0; z < Constants.NOISE_CHUNK_SIZE; z++) {
                     int worldY = y + dy;
                     if (worldY <= heightMap[x][z]) {
                         int colorIndex;
-                        if (worldY <= 10) {
-                            colorIndex = ColorUtil.WATER_COLOR_INDEX;
-                        } else if (worldY <= SAND_LEVEL) {
-                            colorIndex = ColorUtil.SAND_COLOR_INDEX;
-                        } else if (worldY <= MOUNTAIN_LEVEL) {
-                            colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX;
+
+                        // More nuanced color selection based on elevation
+                        if (worldY <= DEEP_WATER_LEVEL) {
+                            colorIndex = ColorUtil.DEEP_OCEAN_COLOR_INDEX; // Dark blue
+                        } else if (worldY <= SHALLOW_WATER_LEVEL) {
+                            colorIndex = ColorUtil.WATER_COLOR_INDEX; // Blue
+                        } else if (worldY <= BEACH_LEVEL) {
+                            colorIndex = ColorUtil.SAND_COLOR_INDEX; // Sandy color
+                        } else if (worldY <= PLAINS_LEVEL) {
+                            // Alternate between grass-like colors for more variation
+                            float grassVariation = baseNoise.GetNoise(x * 0.1f, z * 0.1f);
+                            colorIndex = grassVariation > 0 ? ColorUtil.GRASS_GREEN_COLOR_INDEX : ColorUtil.DARK_GRASS_COLOR_INDEX;
+                        } else if (worldY <= HILLS_LEVEL) {
+                            // Rocky hills with color variation
+                            float hillVariation = baseNoise.GetNoise(x * 0.2f + 100, z * 0.2f + 100);
+                            if (hillVariation > 0.5f) {
+                                colorIndex = ColorUtil.ROCKY_BROWN_COLOR_INDEX;
+                            } else {
+                                colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX;
+                            }
+                        } else if (worldY <= MOUNTAIN_BASE_LEVEL) {
+                            colorIndex = ColorUtil.MOUNTAIN_COLOR_INDEX; // Rocky brown
+                        } else if (worldY <= HIGH_MOUNTAIN_LEVEL) {
+                            // Add some rocky variation to mountains
+                            float mountainVariation = baseNoise.GetNoise(x * 0.3f + 200, z * 0.3f + 200);
+                            if (mountainVariation > 0.6f) {
+                                colorIndex = ColorUtil.GRAY_ROCK_COLOR_INDEX;
+                            } else {
+                                colorIndex = ColorUtil.SNOW_MOUNTAIN_COLOR_INDEX;
+                            }
                         } else {
-                            colorIndex = ColorUtil.SNOW_COLOR_INDEX;
+                            colorIndex = ColorUtil.SNOW_COLOR_INDEX; // Pure white snow
                         }
+
                         data[x][y][z] = colorIndex;
                     } else {
-                        if (worldY <= 10) {
+                        // Water fill for underwater areas
+                        if (worldY <= SHALLOW_WATER_LEVEL) {
                             data[x][y][z] = ColorUtil.WATER_COLOR_INDEX;
-
                         }
                     }
                 }
