@@ -32,6 +32,6 @@ public final class Constants {
     public static final boolean OPTIMIZATION_INSTANCE_RENDERING = true;
     public static final boolean OPTIMIZATION_FACE_CULLING = true;
     public static final boolean OPTIMIZATION_SHADER_MEMORY = true;
-    public static final boolean OPTIMIZATION_FRUSTUM_CULLING = true;
     public static final boolean OPTIMIZATION_GREEDY_MESHING = true;
+    public static final boolean OPTIMIZATION_FRUSTUM_CULLING = true;
 }
