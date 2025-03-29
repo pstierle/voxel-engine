@@ -8,10 +8,12 @@ import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_DISABLED;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_NORMAL;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_O;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_P;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_U;
@@ -47,11 +49,17 @@ public class Window {
     private int height = 900;
     private final Vector2d mousePosition = new Vector2d((double) this.width / 2, (double) this.height / 2);
     private boolean firstMouseMoveHandled = false;
+    private boolean cursorDisabled = true;
+
     public boolean wPressed = false;
     public boolean aPressed = false;
     public boolean sPressed = false;
     public boolean dPressed = false;
     public boolean spacePressed = false;
+
+    public boolean isCursorDisabled() {
+        return cursorDisabled;
+    }
 
     public long getHandle() {
         return handle;
@@ -63,6 +71,11 @@ public class Window {
 
     public int getHeight() {
         return height;
+    }
+
+    public void toggleCursor() {
+        cursorDisabled = !cursorDisabled;
+        glfwSetInputMode(this.handle, GLFW_CURSOR, cursorDisabled ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     }
 
     public void init() {
@@ -90,7 +103,12 @@ public class Window {
                 this.mousePosition.set(xpos, ypos);
                 this.firstMouseMoveHandled = true;
             }
-            State.camera.handleMouseMove(this.mousePosition.x, xpos, this.mousePosition.y, ypos);
+
+            // Only update camera if cursor is disabled (in game mode)
+            if (cursorDisabled) {
+                State.camera.handleMouseMove(this.mousePosition.x, xpos, this.mousePosition.y, ypos);
+            }
+
             this.mousePosition.set(xpos, ypos);
         });
 
@@ -103,6 +121,9 @@ public class Window {
             }
             if (key == GLFW_KEY_O && action == GLFW_RELEASE) {
                 State.physics.togglePhysics();
+            }
+            if (key == GLFW_KEY_P && action == GLFW_RELEASE) {
+                toggleCursor();
             }
         });
 
@@ -119,35 +140,44 @@ public class Window {
     public void input() {
         glfwPollEvents();
 
-        if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_PRESS) {
-            this.wPressed = true;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_PRESS) {
-            this.sPressed = true;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_PRESS) {
-            this.aPressed = true;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_PRESS) {
-            this.dPressed = true;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            this.spacePressed = true;
-        }
+        // Only process movement inputs if cursor is disabled (in game mode)
+        if (cursorDisabled) {
+            if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_PRESS) {
+                this.wPressed = true;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_PRESS) {
+                this.sPressed = true;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_PRESS) {
+                this.aPressed = true;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_PRESS) {
+                this.dPressed = true;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_SPACE) == GLFW_PRESS) {
+                this.spacePressed = true;
+            }
 
-        if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_RELEASE) {
+            if (glfwGetKey(this.handle, GLFW_KEY_W) == GLFW_RELEASE) {
+                this.wPressed = false;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_RELEASE) {
+                this.sPressed = false;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_RELEASE) {
+                this.aPressed = false;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_RELEASE) {
+                this.dPressed = false;
+            }
+            if (glfwGetKey(this.handle, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+                this.spacePressed = false;
+            }
+        } else {
             this.wPressed = false;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_S) == GLFW_RELEASE) {
             this.sPressed = false;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_A) == GLFW_RELEASE) {
             this.aPressed = false;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_D) == GLFW_RELEASE) {
             this.dPressed = false;
-        }
-        if (glfwGetKey(this.handle, GLFW_KEY_SPACE) == GLFW_RELEASE) {
             this.spacePressed = false;
         }
     }

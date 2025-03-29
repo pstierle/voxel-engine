@@ -3,27 +3,45 @@ package voxelengine.core;
 import org.joml.Vector3d;
 import voxelengine.examples.World;
 import voxelengine.util.Chunk;
+import voxelengine.util.Constants;
 import voxelengine.util.Vector3Key;
+import voxelengine.util.WorldType;
 
 public class Physics {
-    private static final double GRAVITY = -25;
-    private static final double TERMINAL_VELOCITY = -150.0;
+    private static final double DEFAULT_PLAYER_HEIGHT_NBT = 8;
+    private static final double DEFAULT_PLAYER_HEIGHT_NOISE = 2;
+    private static final double DEFAULT_PLAYER_WIDTH_NBT = 2;
+    private static final double DEFAULT_PLAYER_WIDTH_NOISE = 1;
+    private static final double DEFAULT_JUMP_STRENGTH_NBT = 20.0;
+    private static final double DEFAULT_JUMP_STRENGTH_NOISE = 6.0;
+    private static final double DEFAULT_GRAVITY_NBT = -25.0;
+    private static final double DEFAULT_GRAVITY_NOISE = -10.0;
+    private static final double DEFAULT_TERMINAL_VELOCITY_NBT = -150.0;
+    private static final double DEFAULT_TERMINAL_VELOCITY_NOISE = -100.0;
+    private static final double DEFAULT_MAX_PLAYER_SPEED_NBT = 25.0;
+    private static final double DEFAULT_MAX_PLAYER_SPEED_NOISE = 6.0;
+    private static final double DEFAULT_ACCELERATION_NBT = 150.0;
+    private static final double DEFAULT_ACCELERATION_NOISE = 30.0;
+    private static final double DEFAULT_DECELERATION_NBT = 40.0;
+    private static final double DEFAULT_DECELERATION_NOISE = 10.0;
+    private static final double DEFAULT_AIR_CONTROL_FACTOR_NBT = 0.8;
+    private static final double DEFAULT_AIR_CONTROL_FACTOR_NOISE = 0.9;
 
-    private static final double PLAYER_HEIGHT = 8.0;
-    private static final double PLAYER_WIDTH = 2;
-
-    private static final double MAX_PLAYER_SPEED = 25.0;
-    private static final double ACCELERATION = 150.0;
-    private static final double DECELERATION = 40.0;
-    private static final double JUMP_STRENGTH = 20.0;
-    private static final double AIR_CONTROL_FACTOR = 0.8;
+    public double PLAYER_HEIGHT = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_PLAYER_HEIGHT_NBT : DEFAULT_PLAYER_HEIGHT_NOISE;
+    public double PLAYER_WIDTH = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_PLAYER_WIDTH_NBT : DEFAULT_PLAYER_WIDTH_NOISE;
+    public double JUMP_STRENGTH = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_JUMP_STRENGTH_NBT : DEFAULT_JUMP_STRENGTH_NOISE;
+    public double GRAVITY = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_GRAVITY_NBT : DEFAULT_GRAVITY_NOISE;
+    public double TERMINAL_VELOCITY = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_TERMINAL_VELOCITY_NBT : DEFAULT_TERMINAL_VELOCITY_NOISE;
+    public double MAX_PLAYER_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_MAX_PLAYER_SPEED_NBT : DEFAULT_MAX_PLAYER_SPEED_NOISE;
+    public double ACCELERATION = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_ACCELERATION_NBT : DEFAULT_ACCELERATION_NOISE;
+    public double DECELERATION = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_DECELERATION_NBT : DEFAULT_DECELERATION_NOISE;
+    public double AIR_CONTROL_FACTOR = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_AIR_CONTROL_FACTOR_NBT : DEFAULT_AIR_CONTROL_FACTOR_NOISE;
 
     private final Vector3d velocity = new Vector3d(0, 0, 0);
     private final Vector3d currentVelocity = new Vector3d(0, 0, 0);
     private final Vector3d moveDirection = new Vector3d();
     private boolean isPhysicsEnabled = false;
     private boolean isGrounded = false;
-
 
     public boolean isPhysicsEnabled() {
         return isPhysicsEnabled;

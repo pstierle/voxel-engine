@@ -13,7 +13,6 @@ import voxelengine.util.Chunk;
 import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
 import voxelengine.util.Log;
-import voxelengine.util.Vector3Key;
 import voxelengine.util.voxel.Color;
 
 import java.io.File;
@@ -130,7 +129,7 @@ public class NbtUtil {
             if (voxelCount > 0) {
                 chunk.setData(data);
                 synchronized (World.chunks) {
-                    World.chunks.put(new Vector3Key(chunk.getXOffset(), chunk.getYOffset(), chunk.getZOffset()), chunk);
+                    World.chunks.put(chunk.getWorldKey(), chunk);
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -153,7 +152,7 @@ public class NbtUtil {
                     }
                 }
                 chunk.setData(data);
-                World.chunks.put(new Vector3Key(chunk.getXOffset(), chunk.getYOffset(), chunk.getZOffset()), chunk);
+                World.chunks.put(chunk.getWorldKey(), chunk);
             }
         }
     }

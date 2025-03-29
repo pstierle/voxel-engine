@@ -46,6 +46,7 @@ public class Renderer {
     private double fpsTimer = 0;
     private int programId;
     private int frameCount;
+    private int fps = 0;
     private int viewLocation;
     private int projectionLocation;
     private int lightPositionLocation;
@@ -59,8 +60,8 @@ public class Renderer {
         return viewLocation;
     }
 
-    public int getFrameCount() {
-        return frameCount;
+    public int getFPS() {
+        return fps;
     }
 
     public int getProjectionLocation() {
@@ -179,6 +180,7 @@ public class Renderer {
 
         if (lastFpsTime >= 1) {
             this.fpsTimer = currentFrameTime;
+            this.fps = frameCount;
             this.frameCount = 0;
         }
     }

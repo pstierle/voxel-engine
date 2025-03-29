@@ -7,7 +7,7 @@ public final class Constants {
     private Constants() {
     }
 
-    public static final WorldType WORLD_TYPE = WorldType.NOISE;
+    public static final WorldType WORLD_TYPE = WorldType.NBT;
     public static final ExampleType WORLD_EXAMPLE = ExampleType.WORLD;
 
     public static final double MOUSE_SENSITIVITY = 0.2;

@@ -49,6 +49,11 @@ public class Chunk {
     private boolean needsAttributeLoad = true;
     private final Map<Direction, Vector3Key> neighborChunkKeys = new EnumMap<>(Direction.class);
     private final Map<Direction, Integer[][][]> neighborChunksData = new EnumMap<>(Direction.class);
+    private final Vector3Key worldKey;
+
+    public Vector3Key getWorldKey() {
+        return worldKey;
+    }
 
     public int getXOffset() {
         return xOffset;
@@ -82,6 +87,7 @@ public class Chunk {
         this.xOffset = chunkOffsetX;
         this.yOffset = chunkOffsetY;
         this.zOffset = chunkOffsetZ;
+        this.worldKey = new Vector3Key(chunkOffsetX, chunkOffsetY, chunkOffsetZ);
     }
 
     public void loadData() {
@@ -527,7 +533,6 @@ public class Chunk {
 
         return voxelCount;
     }
-
 
     private void setupBuffers() {
         this.indicesCount = 0;

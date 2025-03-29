@@ -12,14 +12,13 @@ public class State {
 
     public static final int PROCESSOR_COUNT = Runtime.getRuntime().availableProcessors();
     public static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
-    public static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? 20.0 : 50.0;
-
+    
     public static final Camera camera = new Camera();
     public static final Renderer renderer = new Renderer();
     public static final Window window = new Window();
-    public static final Statistic statistic = new Statistic();
     public static final World world = new World();
     public static final NoiseUtil noiseUtil = new NoiseUtil();
     public static final NbtUtil nbtUtil = new NbtUtil();
     public static final Physics physics = new Physics();
+    public static final ImGUI imGui = new ImGUI();
 }

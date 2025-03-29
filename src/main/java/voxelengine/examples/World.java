@@ -129,7 +129,7 @@ public class World {
                 int[][] heightMap = State.noiseUtil.generateHeightMap(chunkKey.getX(), chunkKey.getZ());
                 chunk.setData(State.noiseUtil.heightMapSlice(heightMap, chunkKey.getY()));
                 newChunks.add(chunk);
-                World.chunks.put(new Vector3Key(chunk.getXOffset(), chunk.getYOffset(), chunk.getZOffset()), chunk);
+                World.chunks.put(chunk.getWorldKey(), chunk);
             }
         }
 

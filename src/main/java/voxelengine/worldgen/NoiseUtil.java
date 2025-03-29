@@ -5,16 +5,12 @@ import voxelengine.examples.World;
 import voxelengine.util.Chunk;
 import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
-import voxelengine.util.Vector3Key;
 import voxelengine.util.VectorXZKey;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NoiseUtil {
-    private static final float SAND_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.25f;
-    private static final float MOUNTAIN_LEVEL = Constants.NOISE_CHUNK_MAX_Y * 0.65f;
-
     private final FastNoiseLite baseNoise;
     private final FastNoiseLite detailNoise;
     private final FastNoiseLite largeFeatureNoise;
@@ -61,7 +57,7 @@ public class NoiseUtil {
                 for (int dy = 0; dy <= maxHeight; dy += Constants.NOISE_CHUNK_SIZE) {
                     Chunk chunk = new Chunk(dx, dy, dz);
                     chunk.setData(heightMapSlice(heightMap, dy));
-                    World.chunks.put(new Vector3Key(dx, dy, dz), chunk);
+                    World.chunks.put(chunk.getWorldKey(), chunk);
                 }
             }
         }

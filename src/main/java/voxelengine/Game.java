@@ -14,7 +14,7 @@ public class Game {
         State.window.init();
         State.renderer.init();
         State.world.init();
-        State.statistic.startPrint();
+        State.imGui.init();
     }
 
     public void loop() {
@@ -29,6 +29,7 @@ public class Game {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             State.world.render();
+            State.imGui.render();
 
             glfwSwapBuffers(State.window.getHandle());
             glfwPollEvents();
@@ -38,7 +39,7 @@ public class Game {
     public void destroy() {
         State.window.destroy();
         State.world.destroy();
-        State.statistic.destroy();
+        State.imGui.destroy();
     }
 
     public static void main(String[] args) {
