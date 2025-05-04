@@ -1,11 +1,11 @@
 package voxelengine.core;
 
 import org.joml.Vector3d;
+import voxelengine.examples.ExampleType;
 import voxelengine.examples.World;
 import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
 import voxelengine.util.Vector3Key;
-import voxelengine.util.WorldType;
 
 public class Physics {
     private static final double DEFAULT_PLAYER_HEIGHT_NBT = 8;
@@ -27,15 +27,15 @@ public class Physics {
     private static final double DEFAULT_AIR_CONTROL_FACTOR_NBT = 0.8;
     private static final double DEFAULT_AIR_CONTROL_FACTOR_NOISE = 0.9;
 
-    public double PLAYER_HEIGHT = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_PLAYER_HEIGHT_NBT : DEFAULT_PLAYER_HEIGHT_NOISE;
-    public double PLAYER_WIDTH = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_PLAYER_WIDTH_NBT : DEFAULT_PLAYER_WIDTH_NOISE;
-    public double JUMP_STRENGTH = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_JUMP_STRENGTH_NBT : DEFAULT_JUMP_STRENGTH_NOISE;
-    public double GRAVITY = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_GRAVITY_NBT : DEFAULT_GRAVITY_NOISE;
-    public double TERMINAL_VELOCITY = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_TERMINAL_VELOCITY_NBT : DEFAULT_TERMINAL_VELOCITY_NOISE;
-    public double MAX_PLAYER_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_MAX_PLAYER_SPEED_NBT : DEFAULT_MAX_PLAYER_SPEED_NOISE;
-    public double ACCELERATION = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_ACCELERATION_NBT : DEFAULT_ACCELERATION_NOISE;
-    public double DECELERATION = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_DECELERATION_NBT : DEFAULT_DECELERATION_NOISE;
-    public double AIR_CONTROL_FACTOR = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_AIR_CONTROL_FACTOR_NBT : DEFAULT_AIR_CONTROL_FACTOR_NOISE;
+    public double PLAYER_HEIGHT = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_PLAYER_HEIGHT_NBT : DEFAULT_PLAYER_HEIGHT_NOISE;
+    public double PLAYER_WIDTH = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_PLAYER_WIDTH_NBT : DEFAULT_PLAYER_WIDTH_NOISE;
+    public double JUMP_STRENGTH = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_JUMP_STRENGTH_NBT : DEFAULT_JUMP_STRENGTH_NOISE;
+    public double GRAVITY = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_GRAVITY_NBT : DEFAULT_GRAVITY_NOISE;
+    public double TERMINAL_VELOCITY = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_TERMINAL_VELOCITY_NBT : DEFAULT_TERMINAL_VELOCITY_NOISE;
+    public double MAX_PLAYER_SPEED = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_MAX_PLAYER_SPEED_NBT : DEFAULT_MAX_PLAYER_SPEED_NOISE;
+    public double ACCELERATION = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_ACCELERATION_NBT : DEFAULT_ACCELERATION_NOISE;
+    public double DECELERATION = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_DECELERATION_NBT : DEFAULT_DECELERATION_NOISE;
+    public double AIR_CONTROL_FACTOR = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_AIR_CONTROL_FACTOR_NBT : DEFAULT_AIR_CONTROL_FACTOR_NOISE;
 
     private final Vector3d velocity = new Vector3d(0, 0, 0);
     private final Vector3d currentVelocity = new Vector3d(0, 0, 0);

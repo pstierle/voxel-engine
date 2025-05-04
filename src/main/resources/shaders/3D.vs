@@ -8,12 +8,10 @@ uniform mat4 view;
 uniform mat4 projection;
 
 out vec3 color; 
-out vec3 normal; 
-out vec3 position; 
+out vec3 normal;
 
 void main() {
     gl_Position = projection * view * vec4(aPos, 1.0);
     color = aColor; 
-    normal = aNormal; 
-    position = aPos;
+    normal = aNormal;
 }

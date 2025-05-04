@@ -2,6 +2,7 @@ package voxelengine.util;
 
 import org.joml.Vector3d;
 import voxelengine.core.State;
+import voxelengine.examples.ExampleType;
 import voxelengine.examples.World;
 import voxelengine.util.voxel.Color;
 import voxelengine.util.voxel.Voxel;
@@ -32,7 +33,7 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Chunk {
-    public static final int CHUNK_SIZE = Constants.WORLD_TYPE == WorldType.NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
+    public static final int CHUNK_SIZE = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? Constants.NBT_CHUNK_SIZE : Constants.NOISE_CHUNK_SIZE;
     private final Voxel baseVoxel = new Voxel();
     private int vboId;
     private int vaoId;
@@ -50,6 +51,7 @@ public class Chunk {
     private final Map<Direction, Vector3Key> neighborChunkKeys = new EnumMap<>(Direction.class);
     private final Map<Direction, Integer[][][]> neighborChunksData = new EnumMap<>(Direction.class);
     private final Vector3Key worldKey;
+    private int totalVoxelFaces = 0;
 
     public Vector3Key getWorldKey() {
         return worldKey;
@@ -91,6 +93,7 @@ public class Chunk {
     }
 
     public void loadData() {
+        this.setupBuffers();
         if (Constants.OPTIMIZATION_GREEDY_MESHING) {
             this.loadDataGreedyMeshing();
         } else {
@@ -99,7 +102,6 @@ public class Chunk {
     }
 
     private void loadDataNormal() {
-        this.setupBuffers();
         int verticesIndex = 0;
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int y = 0; y < CHUNK_SIZE; y++) {
@@ -114,7 +116,6 @@ public class Chunk {
     }
 
     private void loadDataGreedyMeshing() {
-        this.setupBuffers();
         int verticesIndex = 0;
         for (Direction direction : Direction.values()) {
             verticesIndex = processDirectionGreedy(direction, verticesIndex);
@@ -207,18 +208,23 @@ public class Chunk {
                               int width, int height, int colorIndex) {
         Vector3d[] vertices = calculateGreedyFaceVertices(direction, x, y, z, width, height);
         VoxelFace face = baseVoxel.getFaces().stream().filter(f -> f.getDirection() == direction).findFirst().orElse(null);
-        for (Vector3d vertex : vertices) {
-            verticesIndex = this.addFaceVertices(
-                    verticesIndex,
-                    (float) vertex.x + this.xOffset,
-                    (float) vertex.y + this.yOffset,
-                    (float) vertex.z + this.zOffset,
-                    colorIndex,
-                    face
-            );
-        }
+
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
-            int baseOffset = verticesIndex / this.getVoxelFloatPerVertex() - vertices.length;
+            // For instanced rendering, we add 4 vertices and use indices
+            int baseOffset = verticesIndex / this.getVoxelFloatPerVertex();
+
+            for (Vector3d vertex : vertices) {
+                verticesIndex = this.addFaceVertices(
+                        verticesIndex,
+                        (float) vertex.x + this.xOffset,
+                        (float) vertex.y + this.yOffset,
+                        (float) vertex.z + this.zOffset,
+                        colorIndex,
+                        face
+                );
+            }
+
+            // Add indices for the 2 triangles that make up this face
             this.indicesBuffer.put(baseOffset);
             this.indicesBuffer.put(baseOffset + 1);
             this.indicesBuffer.put(baseOffset + 2);
@@ -227,8 +233,67 @@ public class Chunk {
             this.indicesBuffer.put(baseOffset + 3);
             this.indicesBuffer.put(baseOffset);
             this.indicesCount += 6;
+        } else {
+            // For non-instanced rendering with GL_TRIANGLES, we directly add 6 vertices for 2 triangles
+            // First triangle: 0-1-2
+            verticesIndex = this.addFaceVertices(
+                    verticesIndex,
+                    (float) vertices[0].x + this.xOffset,
+                    (float) vertices[0].y + this.yOffset,
+                    (float) vertices[0].z + this.zOffset,
+                    colorIndex,
+                    face
+            );
+
+            verticesIndex = this.addFaceVertices(
+                    verticesIndex,
+                    (float) vertices[1].x + this.xOffset,
+                    (float) vertices[1].y + this.yOffset,
+                    (float) vertices[1].z + this.zOffset,
+                    colorIndex,
+                    face
+            );
+
+            verticesIndex = this.addFaceVertices(
+                    verticesIndex,
+                    (float) vertices[2].x + this.xOffset,
+                    (float) vertices[2].y + this.yOffset,
+                    (float) vertices[2].z + this.zOffset,
+                    colorIndex,
+                    face
+            );
+
+            // Second triangle: 2-3-0
+            verticesIndex = this.addFaceVertices(
+                    verticesIndex,
+                    (float) vertices[2].x + this.xOffset,
+                    (float) vertices[2].y + this.yOffset,
+                    (float) vertices[2].z + this.zOffset,
+                    colorIndex,
+                    face
+            );
+
+            verticesIndex = this.addFaceVertices(
+                    verticesIndex,
+                    (float) vertices[3].x + this.xOffset,
+                    (float) vertices[3].y + this.yOffset,
+                    (float) vertices[3].z + this.zOffset,
+                    colorIndex,
+                    face
+            );
+
+            verticesIndex = this.addFaceVertices(
+                    verticesIndex,
+                    (float) vertices[0].x + this.xOffset,
+                    (float) vertices[0].y + this.yOffset,
+                    (float) vertices[0].z + this.zOffset,
+                    colorIndex,
+                    face
+            );
         }
 
+        // Increment the face counter
+        totalVoxelFaces++;
         return verticesIndex;
     }
 
@@ -311,7 +376,7 @@ public class Chunk {
             this.neighborChunkKeys.put(Direction.BOTTOM, bottomKey);
         }
 
-        if (Constants.WORLD_TYPE == WorldType.NOISE) {
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NOISE) {
             this.neighborChunksData.put(Direction.FRONT, null);
             this.neighborChunksData.put(Direction.BACK, null);
             this.neighborChunksData.put(Direction.LEFT, null);
@@ -389,6 +454,9 @@ public class Chunk {
 
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
+            int[] indices = new int[]{
+                    0, 1, 2, 1, 2, 3
+            };
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, this.indicesBuffer.flip(), GL_STATIC_DRAW);
         }
 
@@ -403,8 +471,19 @@ public class Chunk {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
             glDrawElements(GL_TRIANGLES, this.indicesCount, GL_UNSIGNED_INT, 0);
         } else {
-            glDrawArrays(GL_TRIANGLES, 0, Constants.VOXEL_FACES_COUNT
-                    * Constants.VOXEL_FACE_VERTICES_COUNT * this.numVoxels);
+            // For non-instanced rendering, we need to accurately track vertices
+            // Each face has 6 vertices (2 triangles) when rendered as GL_TRIANGLES
+            int vertexCount;
+
+            if (Constants.OPTIMIZATION_GREEDY_MESHING) {
+                // In greedy meshing, each face creates exactly 6 vertices (2 triangles)
+                vertexCount = totalVoxelFaces * 6;
+            } else {
+                // In normal meshing, we use the standard constant
+                vertexCount = Constants.VOXEL_FACE_VERTICES_COUNT * totalVoxelFaces;
+            }
+
+            glDrawArrays(GL_TRIANGLES, 0, vertexCount);
         }
     }
 
@@ -424,6 +503,7 @@ public class Chunk {
             if (this.skipFace(face.getDirection(), x, y, z)) {
                 continue;
             }
+            totalVoxelFaces++;
             int faceVerticesOffset = (verticesIndex - voxelVerticesStart) / this.getVoxelFloatPerVertex();
             for (Vector3d vertex : face.getVertices()) {
                 verticesIndex = this.addFaceVertices(
@@ -490,7 +570,7 @@ public class Chunk {
                     return checkData != null && checkData[x][0][z] != null;
                 }
             case BOTTOM:
-                if (y == 0 && Constants.WORLD_TYPE == WorldType.NOISE) {
+                if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NOISE) {
                     return true;
                 }
                 if (y - 1 >= 0) {
@@ -518,7 +598,7 @@ public class Chunk {
         return checkData;
     }
 
-    private int calculateVoxelCount() {
+    public int calculateVoxelCount() {
         int voxelCount = 0;
 
         for (int x = 0; x < CHUNK_SIZE; x++) {
@@ -556,7 +636,7 @@ public class Chunk {
             this.verticesBuffer.put((float) face.getDirection().getIndex());
         } else {
             Color color;
-            if (Constants.WORLD_TYPE == WorldType.NBT) {
+            if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT) {
                 color = ColorUtil.nbtColors.get(colorIndex);
             } else {
                 color = ColorUtil.noiseColors.get(colorIndex);
@@ -570,6 +650,7 @@ public class Chunk {
             this.verticesBuffer.put((float) face.getDirection().getNormal().y);
             this.verticesBuffer.put((float) face.getDirection().getNormal().z);
         }
+        State.loadedVertices++;
         return index + this.getVoxelFloatPerVertex();
     }
 

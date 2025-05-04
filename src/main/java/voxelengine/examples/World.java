@@ -5,7 +5,6 @@ import voxelengine.util.Chunk;
 import voxelengine.util.Constants;
 import voxelengine.util.Log;
 import voxelengine.util.Vector3Key;
-import voxelengine.util.WorldType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class World {
+public class World implements BaseExample {
     private static final long UPDATE_INTERVAL = 100_000_000;
     public static final Map<Vector3Key, Chunk> chunks = new ConcurrentHashMap<>();
     private long lastUpdateTime = 0;
@@ -25,13 +24,9 @@ public class World {
     private int renderedChunks = 0;
     private boolean initialWorldLoaded = false;
 
-    public int getRenderedChunks() {
-        return renderedChunks;
-    }
-
     public void init() {
         threadPool = Executors.newFixedThreadPool(State.PROCESSOR_COUNT);
-        if (Constants.WORLD_TYPE == WorldType.NBT) {
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT) {
             State.nbtUtil.loadWorld();
         } else {
             State.noiseUtil.loadWorld();
@@ -71,7 +66,8 @@ public class World {
         if (!initialWorldLoaded) {
             return;
         }
-        if (Constants.WORLD_TYPE == WorldType.NBT) {
+        State.RENDERED_CHUNKS = renderedChunks;
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT) {
             return;
         }
         long currentTime = System.nanoTime();
@@ -82,7 +78,7 @@ public class World {
         lastUpdateTime = currentTime;
         threadPool.submit(() -> {
             try {
-                if (Constants.WORLD_TYPE == WorldType.NOISE) {
+                if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NOISE) {
                     updateNoiseChunks();
                 }
             } finally {

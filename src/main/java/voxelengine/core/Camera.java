@@ -4,20 +4,19 @@ import org.joml.Matrix4d;
 import org.joml.Vector3d;
 import org.joml.Vector4d;
 import org.lwjgl.BufferUtils;
+import voxelengine.examples.ExampleType;
 import voxelengine.util.Constants;
-import voxelengine.util.WorldType;
 
 import java.nio.FloatBuffer;
 
-import static org.lwjgl.opengl.GL20.glUniform3fv;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4fv;
 
 public class Camera {
-    private static final double DEFAULT_CAMERA_SPEED_NBT = 20.0;
+    private static final double DEFAULT_CAMERA_SPEED_NBT = 10.0;
     private static final double DEFAULT_CAMERA_SPEED_NOISE = 50.0;
-    private static final double CAMERA_SPEED = Constants.WORLD_TYPE == WorldType.NBT ? DEFAULT_CAMERA_SPEED_NBT : DEFAULT_CAMERA_SPEED_NOISE;
+    private static final double CAMERA_SPEED = Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT ? DEFAULT_CAMERA_SPEED_NBT : Constants.WORLD_EXAMPLE == ExampleType.WORLD_NOISE ? DEFAULT_CAMERA_SPEED_NOISE : 5;
     private static final float FRUSTUM_SHRINK_FACTOR = 0.0f;
-    private final Vector3d position = new Vector3d(0, 100, 0);
+    private final Vector3d position = new Vector3d(0, 0, 0);
     private final Vector3d front = new Vector3d(0, 0, -1);
     private final Vector3d up = new Vector3d(0, 1, 0);
     private Matrix4d viewMatrix = new Matrix4d();
@@ -39,8 +38,11 @@ public class Camera {
     }
 
     public Camera() {
-        if (Constants.WORLD_TYPE == WorldType.NBT) {
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT) {
             this.position.set(Constants.NBT_WORLD.spawnPosition());
+        }
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NOISE) {
+            this.position.y = 100;
         }
         for (int i = 0; i < 6; i++) {
             frustumPlanes[i] = new Vector4d();
@@ -65,7 +67,7 @@ public class Camera {
 
     public boolean isOnFrustum(int positionX, int positionY, int positionZ) {
         int height = State.CHUNK_SIZE;
-        if (Constants.WORLD_TYPE == WorldType.NOISE) {
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NOISE) {
             height *= 2;
         }
         Vector3d[] corners = new Vector3d[8];
@@ -133,6 +135,7 @@ public class Camera {
             }
         }
 
+
         double dirX = Math.cos(Math.toRadians(this.yaw)) * Math.cos(Math.toRadians(this.pitch));
         double dirY = Math.sin(Math.toRadians(this.pitch));
         double dirZ = Math.sin(Math.toRadians(this.yaw)) * Math.cos(Math.toRadians(this.pitch));
@@ -160,10 +163,6 @@ public class Camera {
         FloatBuffer projectionDest = BufferUtils.createFloatBuffer(16);
         this.projectionMatrix.get(projectionDest);
         glUniformMatrix4fv(State.renderer.getProjectionLocation(), false, projectionDest);
-
-        FloatBuffer cameraDest = BufferUtils.createFloatBuffer(3);
-        this.position.get(cameraDest);
-        glUniform3fv(State.renderer.getCameraPositionLocation(), cameraDest);
 
         Matrix4d viewProjection = new Matrix4d(projectionMatrix).mul(viewMatrix);
 

@@ -1,13 +1,10 @@
 package voxelengine.core;
 
-import org.joml.Vector3d;
-import org.lwjgl.BufferUtils;
 import voxelengine.examples.ExampleType;
 import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
 import voxelengine.util.Direction;
 import voxelengine.util.Shader;
-import voxelengine.util.WorldType;
 import voxelengine.util.voxel.Color;
 
 import java.nio.ByteBuffer;
@@ -36,10 +33,8 @@ import static org.lwjgl.opengl.GL46.glClearColor;
 import static org.lwjgl.opengl.GL46.glCreateProgram;
 import static org.lwjgl.opengl.GL46.glGetUniformLocation;
 import static org.lwjgl.opengl.GL46.glPolygonMode;
-import static org.lwjgl.opengl.GL46.glUniform3fv;
 
 public class Renderer {
-    private final Vector3d lightPosition = new Vector3d(0, 200, 0);
     private boolean wireframeEnabled = false;
     private double deltaTime = 0;
     private double lastFrameTime;
@@ -49,8 +44,6 @@ public class Renderer {
     private int fps = 0;
     private int viewLocation;
     private int projectionLocation;
-    private int lightPositionLocation;
-    private int cameraPositionLocation;
 
     public int getProgramId() {
         return programId;
@@ -68,10 +61,6 @@ public class Renderer {
         return projectionLocation;
     }
 
-    public int getCameraPositionLocation() {
-        return cameraPositionLocation;
-    }
-
     public double getDeltaTime() {
         return deltaTime;
     }
@@ -84,25 +73,26 @@ public class Renderer {
         this.lastFrameTime = glfwGetTime();
         this.programId = glCreateProgram();
 
-        if (Constants.WORLD_EXAMPLE == ExampleType.TRIANGLE_2D || Constants.WORLD_EXAMPLE == ExampleType.VOXEL_2D) {
-            Shader.loadShader(this.programId, "shaders/basic.fs", GL_FRAGMENT_SHADER);
-            Shader.loadShader(this.programId, "shaders/basic.vs", GL_VERTEX_SHADER);
+        if (Constants.WORLD_EXAMPLE == ExampleType.TRIANGLE_2D) {
+            Shader.loadShader(this.programId, "shaders/2D.fs", GL_FRAGMENT_SHADER);
+            Shader.loadShader(this.programId, "shaders/2D.vs", GL_VERTEX_SHADER);
+        } else if (Constants.WORLD_EXAMPLE == ExampleType.QUAD_2D) {
+            Shader.loadShader(this.programId, "shaders/2D_color.fs", GL_FRAGMENT_SHADER);
+            Shader.loadShader(this.programId, "shaders/2D_color.vs", GL_VERTEX_SHADER);
         } else {
             if (Constants.OPTIMIZATION_SHADER_MEMORY) {
-                Shader.loadShader(this.programId, "shaders/world_optimized.fs", GL_FRAGMENT_SHADER);
-                Shader.loadShader(this.programId, "shaders/world_optimized.vs", GL_VERTEX_SHADER);
+                Shader.loadShader(this.programId, "shaders/3D_optimized.fs", GL_FRAGMENT_SHADER);
+                Shader.loadShader(this.programId, "shaders/3D_optimized.vs", GL_VERTEX_SHADER);
             } else {
-                Shader.loadShader(this.programId, "shaders/world.fs", GL_FRAGMENT_SHADER);
-                Shader.loadShader(this.programId, "shaders/world.vs", GL_VERTEX_SHADER);
+                Shader.loadShader(this.programId, "shaders/3D.fs", GL_FRAGMENT_SHADER);
+                Shader.loadShader(this.programId, "shaders/3D.vs", GL_VERTEX_SHADER);
             }
             this.viewLocation = glGetUniformLocation(this.programId, "view");
             this.projectionLocation = glGetUniformLocation(this.programId, "projection");
-            this.lightPositionLocation = glGetUniformLocation(this.programId, "light_position");
-            this.cameraPositionLocation = glGetUniformLocation(this.programId, "camera_position");
 
             if (Constants.OPTIMIZATION_SHADER_MEMORY) {
-                int normalBlockIndex = glGetUniformBlockIndex(this.programId, "normalPalette");
-                glUniformBlockBinding(this.programId, normalBlockIndex, 0);
+                int normalPaletteId = glGetUniformBlockIndex(this.programId, "normalPalette");
+                glUniformBlockBinding(this.programId, normalPaletteId, 0);
 
                 List<Direction> normalPalette = List.of(
                         Direction.FRONT,
@@ -119,17 +109,25 @@ public class Renderer {
                 }
                 normalBuffer.flip();
 
-                int normalUbo = glGenBuffers();
-                glBindBuffer(GL_UNIFORM_BUFFER, normalUbo);
+                float[] normals = new float[]{
+                        0.0f, 0.0f, 1.0f, 1.0f,
+                        0.0f, 0.0f, -1.0f, 1.0f,
+                        -1.0f, 0.0f, 0.0f, 1.0f,
+                        1.0f, 0.0f, 0.0f, 1.0f,
+                        0.0f, 1.0f, 0.0f, 1.0f,
+                        0.0f, -1.0f, 0.0f, 1.0f
+                };
+                int normalUboId = glGenBuffers();
+                glBindBuffer(GL_UNIFORM_BUFFER, normalUboId);
                 glBufferData(GL_UNIFORM_BUFFER, normalBuffer, GL_STATIC_DRAW);
-                glBindBufferBase(GL_UNIFORM_BUFFER, 0, normalUbo);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 0, normalUboId);
             }
         }
     }
 
     public void setColorUBO() {
         List<Color> colorSource;
-        if (Constants.WORLD_TYPE == WorldType.NBT) {
+        if (Constants.WORLD_EXAMPLE == ExampleType.WORLD_NBT) {
             colorSource = ColorUtil.nbtColors;
         } else {
             colorSource = ColorUtil.noiseColors;
@@ -164,12 +162,11 @@ public class Renderer {
     }
 
     public void update() {
-        this.displayStats();
+        this.updateStats();
         this.prepare();
-        this.updateUniforms();
     }
 
-    private void displayStats() {
+    private void updateStats() {
         this.frameCount++;
         double currentFrameTime = glfwGetTime();
 
@@ -194,11 +191,5 @@ public class Renderer {
         } else {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
-    }
-
-    private void updateUniforms() {
-        FloatBuffer lightPositionDest = BufferUtils.createFloatBuffer(3);
-        this.lightPosition.get(lightPositionDest);
-        glUniform3fv(this.lightPositionLocation, lightPositionDest);
     }
 }

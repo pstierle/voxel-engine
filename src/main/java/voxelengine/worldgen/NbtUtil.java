@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NbtUtil {
     public void loadWorld() {
@@ -37,6 +38,11 @@ public class NbtUtil {
         } else {
             this.loadNbtWorld();
         }
+        AtomicInteger total = new AtomicInteger();
+        World.chunks.values().forEach(chunk -> {
+            total.addAndGet(chunk.calculateVoxelCount());
+        });
+        System.out.println(total.get());
     }
 
     private int[] parseChunkOffset(String input) {
@@ -138,22 +144,63 @@ public class NbtUtil {
     }
 
     private void loadDebugWorld() {
+        ColorUtil.nbtColors.clear();
         ColorUtil.nbtColors.add(new Color(1.0f, 0.0f, 0.0f));
+        ColorUtil.nbtColors.add(new Color(0.0f, 0.0f, 1.0f));
 
-        for (int dx = 0; dx < 4; dx++) {
-            for (int dz = 0; dz < 4; dz++) {
-                Chunk chunk = new Chunk(dx * Constants.NBT_CHUNK_SIZE, 0, dz * Constants.NBT_CHUNK_SIZE);
-                Integer[][][] data = new Integer[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
-                for (int x = 0; x < Constants.NBT_CHUNK_SIZE; x++) {
-                    for (int y = 0; y < Constants.NBT_CHUNK_SIZE; y++) {
-                        for (int z = 0; z < Constants.NBT_CHUNK_SIZE; z++) {
-                            data[x][y][z] = 0;
+        Color[][][] world = new Color[][][]{
+                // x=0
+                {
+                        // y=0
+                        {
+                                new Color(1.0f, 0.0f, 0.0f),  // (x=0, y=0, z=0)
+                                new Color(1.0f, 0.0f, 0.0f)   // (x=0, y=0, z=1)
+                        },
+                        // y=1
+                        {
+                                new Color(0.0f, 0.0f, 1.0f),                                  // (x=0, y=1, z=0)
+                                null   // (x=0, y=1, z=1)
                         }
+                },
+                // x=1
+                {
+                        // y=0
+                        {
+                                new Color(1.0f, 0.0f, 0.0f),  // (x=1, y=0, z=0)
+                                new Color(1.0f, 0.0f, 0.0f)   // (x=1, y=0, z=1)
+                        },
+                        // y=1
+                        {
+                                new Color(0.0f, 0.0f, 1.0f),                                  // (x=1, y=1, z=0)
+                                null   // (x=1, y=1, z=1)
+                        }
+                }
+        };
+
+
+        Chunk chunk = new Chunk(0, 0, 0);
+        Integer[][][] data = new Integer[Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE][Constants.NBT_CHUNK_SIZE];
+
+        for (int x = 0; x < world.length; x++) {
+            for (int y = 0; y < world[x].length; y++) {
+                for (int z = 0; z < world[x][y].length; z++) {
+                    Color color = world[x][y][z];
+                    if (color != null) {
+                        for (int i = 0; i < ColorUtil.nbtColors.size(); i++) {
+                            Color nbtColor = ColorUtil.nbtColors.get(i);
+                            if (color.getR() == nbtColor.getR() && color.getG() == nbtColor.getG() && color.getB() == nbtColor.getB()) {
+                                data[x][y][z] = i;
+                                System.out.println(i);
+                                break;
+                            }
+                        }
+                    } else {
+                        data[x][y][z] = null;
                     }
                 }
-                chunk.setData(data);
-                World.chunks.put(chunk.getWorldKey(), chunk);
             }
         }
+        chunk.setData(data);
+        World.chunks.put(chunk.getWorldKey(), chunk);
     }
 }

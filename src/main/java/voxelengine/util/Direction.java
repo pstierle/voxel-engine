@@ -21,6 +21,12 @@ public enum Direction {
     private static final Vector3d TOP_NORMAL = new Vector3d(0, 1, 0);
     private static final Vector3d BOTTOM_NORMAL = new Vector3d(0, -1, 0);
 
+    public enum Axis {
+        X,
+        Y,
+        Z;
+    }
+
     public Vector3d getNormal() {
         return switch (this) {
             case FRONT -> FRONT_NORMAL;

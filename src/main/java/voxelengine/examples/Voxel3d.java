@@ -1,10 +1,6 @@
 package voxelengine.examples;
 
-import org.joml.Vector3d;
-import voxelengine.core.Camera;
-import voxelengine.core.Renderer;
-import voxelengine.util.voxel.Voxel;
-import voxelengine.util.voxel.VoxelFace;
+import voxelengine.core.State;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -25,31 +21,61 @@ import static org.lwjgl.opengl.GL46.glVertexAttribPointer;
 
 public class Voxel3d implements BaseExample {
     @Override
-    public void init(Renderer renderer, Camera camera) {
+    public void init() {
         int vboId;
         int vaoId;
 
-        Voxel voxel = new Voxel();
-        float[] vertices = new float[6 * 6 * 9];
-        int verticesIndex = 0;
+        float[] vertices = {
+                // Vorne (Positive Z-Achse)
+                -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // Unten links
+                0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // Unten rechts
+                -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,// Oben links
+                0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,// Unten rechts
+                0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,// Oben rechts
+                -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,// Oben links
 
-        for (VoxelFace face : voxel.getFaces()) {
-            for (Vector3d vertex : face.getVertices()) {
-                vertices[verticesIndex++] = (float) vertex.x;
-                vertices[verticesIndex++] = (float) vertex.y;
-                vertices[verticesIndex++] = (float) vertex.z;
+                // Hinten (Negative Z-Achse)
+                -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,// Unten links
+                -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,// Oben links
+                0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,// Unten rechts
+                -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,// Oben links
+                0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,// Oben rechts
+                0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,// Unten rechts
 
-                vertices[verticesIndex++] = 1.0f;
-                vertices[verticesIndex++] = 0.0f;
-                vertices[verticesIndex++] = 0.0f;
+                // Links (Negative X-Achse)
+                -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,// Unten links
+                -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,// Unten rechts
+                -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,// Oben links
+                -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,// Unten rechts
+                -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,// Oben rechts
+                -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,// Oben links
 
-                vertices[verticesIndex++] = (float) face.getDirection().getNormal().x;
-                vertices[verticesIndex++] = (float) face.getDirection().getNormal().y;
-                vertices[verticesIndex++] = (float) face.getDirection().getNormal().z;
-            }
-        }
+                // Rechts (Positive X-Achse)
+                0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// Unten links
+                0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// Oben links
+                0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// Unten rechts
+                0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// Oben links
+                0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// Unten rechts
+                0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,// Oben rechts
 
-        glUseProgram(renderer.getProgramId());
+                // Oben (Positive Y-Achse)
+                -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,// Unten links
+                -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,// Unten rechts
+                0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,// Oben links
+                -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,// Unten rechts
+                0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,// Oben rechts
+                0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,// Oben links
+
+                // Unten (Negative Y-Achse)
+                -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,// Unten links
+                0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,// Unten rechts
+                -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,// Oben links
+                0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,// Unten rechts
+                0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,// Oben rechts
+                -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,// Oben links
+        };
+
+        glUseProgram(State.renderer.getProgramId());
         vboId = glGenBuffers();
         vaoId = glGenVertexArrays();
         glBindVertexArray(vaoId);

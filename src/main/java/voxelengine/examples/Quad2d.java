@@ -19,17 +19,20 @@ import static org.lwjgl.opengl.GL46.glGenVertexArrays;
 import static org.lwjgl.opengl.GL46.glUseProgram;
 import static org.lwjgl.opengl.GL46.glVertexAttribPointer;
 
-public class Triangle2d implements BaseExample {
+public class Quad2d implements BaseExample {
     @Override
     public void init() {
         int vboId;
         int vaoId;
 
         float[] vertices = {
-                // Triangle
-                -0.5f, -0.5f, // Bottom left
-                0.5f, -0.5f, // Bottom Right
-                0.0f, 0.5f, // Top
+                // Quad
+                -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, // Bottom left
+                0.5f, -0.5f, 1.0f, 0.0f, 0.0f,// Bottom right
+                -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,// Top left
+                0.5f, -0.5f, 0.0f, 0.0f, 1.0f,// Bottom right
+                0.5f, 0.5f, 0.0f, 0.0f, 1.0f,// Top right
+                -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,// Top left
         };
 
         glUseProgram(State.renderer.getProgramId());
@@ -45,8 +48,11 @@ public class Triangle2d implements BaseExample {
         verticesBuffer.put(vertices).flip();
         glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, 2 * Float.BYTES, 0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, false, 5 * Float.BYTES, 0);
         glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 5 * Float.BYTES, 2 * Float.BYTES);
+        glEnableVertexAttribArray(1);
     }
 
     @Override
@@ -56,7 +62,8 @@ public class Triangle2d implements BaseExample {
 
     @Override
     public void render() {
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 
     @Override

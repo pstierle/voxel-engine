@@ -23,7 +23,7 @@ public class ImGUI {
     private final ImFloat airControlFactor = new ImFloat((float) State.physics.AIR_CONTROL_FACTOR);
 
     private static final int STATS_WINDOW_WIDTH = 230;
-    private static final int STATS_WINDOW_HEIGHT = 90;
+    private static final int STATS_WINDOW_HEIGHT = 100;
     private static final int PARAMS_WINDOW_WIDTH = 420;
     private static final int PARAMS_WINDOW_HEIGHT = 300;
 
@@ -67,11 +67,12 @@ public class ImGUI {
         ImGui.begin("Statistics", windowFlags);
 
         ImGui.text("FPS: " + State.renderer.getFPS());
-        ImGui.text("Rendered Chunks: " + State.world.getRenderedChunks());
+        ImGui.text("Rendered Chunks: " + State.RENDERED_CHUNKS);
         ImGui.text(String.format("Position: (x=%d, y=%d, z=%d)",
                 (int) State.camera.getPosition().x,
                 (int) State.camera.getPosition().y,
                 (int) State.camera.getPosition().z));
+        ImGui.text(String.format("Loaded vertices: %d", State.loadedVertices));
 
         ImGui.end();
     }

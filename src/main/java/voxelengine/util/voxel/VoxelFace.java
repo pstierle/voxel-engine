@@ -4,6 +4,7 @@ import org.joml.Vector3d;
 import voxelengine.util.Direction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class VoxelFace {
@@ -30,7 +31,11 @@ public class VoxelFace {
     public VoxelFace(Direction direction, int verticesCount) {
         this.direction = direction;
         this.vertices = new ArrayList<>(verticesCount);
+    }
 
+    public void setVertices(Vector3d[] vertices) {
+        this.vertices.clear();
+        this.vertices.addAll(Arrays.asList(vertices));
     }
 
     public void addVertex(Vector3d vertex) {
