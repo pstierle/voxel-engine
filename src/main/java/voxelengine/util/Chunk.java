@@ -1,10 +1,10 @@
 package voxelengine.util;
 
 import org.joml.Vector3d;
+import voxelengine.VoxelEngineUtil.Color;
 import voxelengine.core.State;
 import voxelengine.examples.ExampleType;
 import voxelengine.examples.World;
-import voxelengine.util.voxel.Color;
 import voxelengine.util.voxel.Voxel;
 import voxelengine.util.voxel.VoxelFace;
 
@@ -454,9 +454,6 @@ public class Chunk {
 
         if (Constants.OPTIMIZATION_INSTANCE_RENDERING) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.eboId);
-            int[] indices = new int[]{
-                    0, 1, 2, 1, 2, 3
-            };
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, this.indicesBuffer.flip(), GL_STATIC_DRAW);
         }
 
@@ -642,9 +639,9 @@ public class Chunk {
                 color = ColorUtil.noiseColors.get(colorIndex);
             }
 
-            this.verticesBuffer.put(color.getR());
-            this.verticesBuffer.put(color.getG());
-            this.verticesBuffer.put(color.getB());
+            this.verticesBuffer.put(color.r);
+            this.verticesBuffer.put(color.g);
+            this.verticesBuffer.put(color.b);
 
             this.verticesBuffer.put((float) face.getDirection().getNormal().x);
             this.verticesBuffer.put((float) face.getDirection().getNormal().y);

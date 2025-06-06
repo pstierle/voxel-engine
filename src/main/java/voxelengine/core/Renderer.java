@@ -1,11 +1,11 @@
 package voxelengine.core;
 
+import voxelengine.VoxelEngineUtil.Color;
 import voxelengine.examples.ExampleType;
 import voxelengine.util.ColorUtil;
 import voxelengine.util.Constants;
 import voxelengine.util.Direction;
 import voxelengine.util.Shader;
-import voxelengine.util.voxel.Color;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -150,7 +150,7 @@ public class Renderer {
         FloatBuffer colorBuffer = ByteBuffer.allocateDirect(colors.length * 4 * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
 
         for (int i = 0; i < 250; i++) {
-            colorBuffer.put(colors[i].getR()).put(colors[i].getG()).put(colors[i].getB()).put(1.0f);
+            colorBuffer.put(colors[i].r).put(colors[i].g).put(colors[i].b).put(1.0f);
         }
 
         colorBuffer.flip();

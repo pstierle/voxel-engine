@@ -23,12 +23,5 @@ public class Color {
         return b;
     }
 
-    public static Color fromString(String colorString) {
-        String[] parts = colorString.split(",");
-        if (parts.length == 3) {
-            return new Color(Float.parseFloat(parts[0]), Float.parseFloat(parts[1]), Float.parseFloat(parts[2]));
-        } else {
-            throw new IllegalArgumentException("Invalid color string: " + colorString);
-        }
-    }
+
 }

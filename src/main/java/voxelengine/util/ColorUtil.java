@@ -1,6 +1,7 @@
 package voxelengine.util;
 
-import voxelengine.util.voxel.Color;
+
+import voxelengine.VoxelEngineUtil.Color;
 
 import java.util.ArrayList;
 import java.util.List;
