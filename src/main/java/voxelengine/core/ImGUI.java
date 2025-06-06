@@ -12,7 +12,7 @@ public class ImGUI {
     protected ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
 
     private static final int STATS_WINDOW_WIDTH = 230;
-    private static final int STATS_WINDOW_HEIGHT = 85;
+    private static final int STATS_WINDOW_HEIGHT = 185;
 
     public void init(long windowHandle) {
         ImGui.createContext();
@@ -20,7 +20,7 @@ public class ImGUI {
         imGuiGl3.init("#version 150");
     }
 
-    public void render(double cameraX, double cameraY, double cameraZ, int fps, int verticesCount) {
+    public void render(double cameraX, double cameraY, double cameraZ, int fps, int verticesCount, int verticesByteSize, long jvmMemory, int usedVRAM) {
         imGuiGl3.newFrame();
         imGuiGlfw.newFrame();
         ImGui.newFrame();
@@ -37,7 +37,10 @@ public class ImGUI {
                 (int) cameraX,
                 (int) cameraY,
                 (int) cameraZ));
-        ImGui.text(String.format("Loaded vertices: %d", verticesCount));
+        ImGui.text(String.format("Total Vertices: %d", verticesCount));
+        ImGui.text(String.format("Vertices Size (mb): %.2f", verticesByteSize / (1024.0 * 1024.0)));
+        ImGui.text(String.format("JVM Memory (mb): %.2f", jvmMemory / (1024.0 * 1024.0)));
+        ImGui.text(String.format("VRAM (mb): %.2f", usedVRAM / (1024.0 * 1024.0)));
 
         ImGui.end();
 

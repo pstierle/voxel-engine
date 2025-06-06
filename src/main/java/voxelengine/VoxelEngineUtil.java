@@ -1,5 +1,7 @@
 package voxelengine;
 
+import java.util.List;
+
 public class VoxelEngineUtil {
     private VoxelEngineUtil() {
     }
@@ -141,5 +143,227 @@ public class VoxelEngineUtil {
                 throw new IllegalArgumentException("Invalid color string: " + colorString);
             }
         }
+    }
+
+    public static class BaseVoxelIndexed {
+        public final VoxelFaceIndexed[] faces;
+
+        public BaseVoxelIndexed() {
+            Vector3[] frontPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f)
+            };
+
+            Vector3[] backPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f)
+            };
+
+            Vector3[] leftPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f)
+            };
+
+            Vector3[] rightPositions = new Vector3[]{
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f)
+            };
+
+            Vector3[] topPositions = new Vector3[]{
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f)
+            };
+
+            Vector3[] bottomPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f)
+            };
+            this.faces = new VoxelFaceIndexed[]{
+                    new VoxelFaceIndexed(0, frontPositions),
+                    new VoxelFaceIndexed(1, backPositions),
+                    new VoxelFaceIndexed(2, leftPositions),
+                    new VoxelFaceIndexed(3, rightPositions),
+                    new VoxelFaceIndexed(4, topPositions),
+                    new VoxelFaceIndexed(5, bottomPositions)
+            };
+        }
+    }
+
+    public static class VoxelFaceIndexed {
+        public final int normalIndex;
+        public final Vector3[] vertexPositions;
+
+        public VoxelFaceIndexed(int normalIndex, Vector3[] vertexPositions) {
+            this.normalIndex = normalIndex;
+            this.vertexPositions = vertexPositions;
+        }
+    }
+
+    public static class BaseVoxelInstanced {
+        public final VoxelFaceInstanced[] faces;
+
+        public BaseVoxelInstanced() {
+            Vector3[] frontPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f)
+            };
+
+            Vector3[] backPositions = new Vector3[]{
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+            };
+
+            Vector3[] leftPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+            };
+
+            Vector3[] rightPositions = new Vector3[]{
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+            };
+
+            Vector3[] topPositions = new Vector3[]{
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+            };
+
+            Vector3[] bottomPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+            };
+            this.faces = new VoxelFaceInstanced[]{
+                    new VoxelFaceInstanced(FRONT_NORMAL, frontPositions),
+                    new VoxelFaceInstanced(BACK_NORMAL, backPositions),
+                    new VoxelFaceInstanced(LEFT_NORMAL, leftPositions),
+                    new VoxelFaceInstanced(RIGHT_NORMAL, rightPositions),
+                    new VoxelFaceInstanced(TOP_NORMAL, topPositions),
+                    new VoxelFaceInstanced(BOTTOM_NORMAL, bottomPositions)
+            };
+        }
+    }
+
+    public static class VoxelFaceInstanced {
+        public final Vector3 normal;
+        public final Vector3[] vertexPositions;
+        public final int[] indices = new int[]{0, 1, 2, 0, 2, 3};
+
+        public VoxelFaceInstanced(Vector3 normal, Vector3[] vertexPositions) {
+            this.normal = normal;
+            this.vertexPositions = vertexPositions;
+        }
+    }
+
+    public static class BaseVoxel {
+        public final VoxelFace[] faces;
+
+        public BaseVoxel() {
+            Vector3[] frontPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f)
+            };
+
+            Vector3[] backPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f)
+            };
+
+            Vector3[] leftPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(-0.5f, 0.5f, -0.5f)
+            };
+
+            Vector3[] rightPositions = new Vector3[]{
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f)
+            };
+
+            Vector3[] topPositions = new Vector3[]{
+                    new Vector3(-0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f),
+                    new Vector3(-0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0.5f, -0.5f)
+            };
+
+            Vector3[] bottomPositions = new Vector3[]{
+                    new Vector3(-0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f),
+                    new Vector3(0.5f, -0.5f, -0.5f),
+                    new Vector3(0.5f, -0.5f, 0.5f),
+                    new Vector3(-0.5f, -0.5f, 0.5f)
+            };
+            this.faces = new VoxelFace[]{
+                    new VoxelFace(FRONT_NORMAL, frontPositions),
+                    new VoxelFace(BACK_NORMAL, backPositions),
+                    new VoxelFace(LEFT_NORMAL, leftPositions),
+                    new VoxelFace(RIGHT_NORMAL, rightPositions),
+                    new VoxelFace(TOP_NORMAL, topPositions),
+                    new VoxelFace(BOTTOM_NORMAL, bottomPositions)
+            };
+        }
+    }
+
+    public record VoxelFace(Vector3 normal, Vector3[] vertexPositions) {
+    }
+
+    public record World(List<Chunk> chunks) {
+    }
+
+    public record WorldIndexed(List<VoxelEngineUtil.Chunk> chunks, List<VoxelEngineUtil.Color> uboColors) {
     }
 }
