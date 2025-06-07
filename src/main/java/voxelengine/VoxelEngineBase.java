@@ -1,6 +1,7 @@
 package voxelengine;
 
 import org.lwjgl.opengl.GL;
+
 import voxelengine.core.ImGUI;
 import voxelengine.util.Log;
 
@@ -72,6 +73,7 @@ import static org.lwjgl.opengl.GL20.glUseProgram;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import org.lwjgl.opengl.NVXGPUMemoryInfo;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class VoxelEngineBase {
@@ -81,7 +83,8 @@ public class VoxelEngineBase {
     protected int programId;
     private int windowWidth = 1600;
     private int windowHeight = 900;
-    private final VoxelEngineUtil.Vector2 mousePosition = new VoxelEngineUtil.Vector2((float) this.windowWidth / 2, (float) this.windowHeight / 2);
+    private final VoxelEngineUtil.Vector2 mousePosition = new VoxelEngineUtil.Vector2((float) this.windowWidth / 2,
+            (float) this.windowHeight / 2);
     private boolean firstMouseMoveHandled = false;
     private float cameraYaw = 0;
     private float cameraPitch = 0;
@@ -113,7 +116,8 @@ public class VoxelEngineBase {
             for (int x = 0; x < chunk.data.length; x++) {
                 for (int y = 0; y < chunk.data[x].length; y++) {
                     for (int z = 0; z < chunk.data[x][y].length; z++) {
-                        if (chunk.data[x][y][z] != null) voxelCount++;
+                        if (chunk.data[x][y][z] != null)
+                            voxelCount++;
                     }
                 }
             }
@@ -213,7 +217,7 @@ public class VoxelEngineBase {
     }
 
     public void update() {
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         float currentFrameTime = (float) glfwGetTime();
         deltaTime = currentFrameTime - this.lastFrameTime;
         this.lastFrameTime = currentFrameTime;
@@ -261,26 +265,26 @@ public class VoxelEngineBase {
         float tY = -(yAxisX * this.cameraPosition.x + yAxisY * this.cameraPosition.y + yAxisZ * this.cameraPosition.z);
         float tZ = -(zAxisX * this.cameraPosition.x + zAxisY * this.cameraPosition.y + zAxisZ * this.cameraPosition.z);
 
-        float[] viewMatrixData = new float[]{
-                xAxisX,      // m00
-                yAxisX,      // m10
-                zAxisX,      // m20
-                0.0f,        // m30
+        float[] viewMatrixData = new float[] {
+                xAxisX, // m00
+                yAxisX, // m10
+                zAxisX, // m20
+                0.0f, // m30
 
-                xAxisY,      // m01
-                yAxisY,      // m11
-                zAxisY,      // m21
-                0.0f,        // m31
+                xAxisY, // m01
+                yAxisY, // m11
+                zAxisY, // m21
+                0.0f, // m31
 
-                xAxisZ,      // m02
-                yAxisZ,      // m12
-                zAxisZ,      // m22
-                0.0f,        // m32
+                xAxisZ, // m02
+                yAxisZ, // m12
+                zAxisZ, // m22
+                0.0f, // m32
 
-                tX,          // m03
-                tY,          // m13
-                tZ,          // m23
-                1.0f         // m33
+                tX, // m03
+                tY, // m13
+                tZ, // m23
+                1.0f // m33
         };
 
         glUniformMatrix4fv(this.viewLocation, false, viewMatrixData);
@@ -417,26 +421,26 @@ public class VoxelEngineBase {
 
         float test = 1 / (float) Math.tan((double) fov / 2);
 
-        final float[] projectionMatrixData = new float[]{
-                test / aspectRatio,                // m00
-                0.0f,                           // m10
-                0.0f,                           // m20
-                0.0f,                           // m30
+        final float[] projectionMatrixData = new float[] {
+                test / aspectRatio, // m00
+                0.0f, // m10
+                0.0f, // m20
+                0.0f, // m30
 
-                0.0f,                           // m01
-                test,                              // m11
-                0.0f,                           // m21
-                0.0f,                           // m31
+                0.0f, // m01
+                test, // m11
+                0.0f, // m21
+                0.0f, // m31
 
-                0.0f,                           // m02
-                0.0f,                           // m12
-                farPlane / (nearPlane - farPlane),    // m22
-                -1.0f,                          // m32
+                0.0f, // m02
+                0.0f, // m12
+                farPlane / (nearPlane - farPlane), // m22
+                -1.0f, // m32
 
-                0.0f,                           // m03
-                0.0f,                           // m13
-                (nearPlane * farPlane) / (nearPlane - farPlane),// m23
-                0.0f                            // m33
+                0.0f, // m03
+                0.0f, // m13
+                (nearPlane * farPlane) / (nearPlane - farPlane), // m23
+                0.0f // m33
         };
 
         glUniformMatrix4fv(projectionLocation, false, projectionMatrixData);
@@ -445,17 +449,17 @@ public class VoxelEngineBase {
     public String vertexShaderSource() {
         return """
                     #version 330 core
-                
+
                     layout(location = 0) in vec3 aPos;
                     layout(location = 1) in vec3 aColor;
                     layout(location = 2) in vec3 aNormal;
-                
+
                     uniform mat4 view;
                     uniform mat4 projection;
-                
+
                     out vec3 color;
                     out vec3 normal;
-                
+
                     void main() {
                         gl_Position = projection * view * vec4(aPos, 1.0);
                         color = aColor;
@@ -467,15 +471,15 @@ public class VoxelEngineBase {
     public String fragmentShaderSource() {
         return """
                     #version 330 core
-                
+
                     in vec3 color;
                     in vec3 normal;
-                
+
                     out vec4 fragmentColor;
-                
+
                     void main() {
                         float brightness = 1.0;
-                
+
                         if (normal.y > 0.5) {
                             brightness = 1.0;
                         } else if (normal.y < -0.5) {
@@ -483,13 +487,12 @@ public class VoxelEngineBase {
                         } else {
                             brightness = 0.8;
                         }
-                
+
                         vec3 litColor = color * brightness;
                         fragmentColor = vec4(litColor, 1.0);
                     }
                 """;
     }
-
 
     public void initShaders() {
         programId = glCreateProgram();
@@ -512,7 +515,6 @@ public class VoxelEngineBase {
         this.viewLocation = glGetUniformLocation(programId, "view");
         this.projectionLocation = glGetUniformLocation(programId, "projection");
 
-
         this.setProjectionMatrix();
     }
 
@@ -522,25 +524,26 @@ public class VoxelEngineBase {
         glfwTerminate();
     }
 
-    private static final int GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX = 0x9048;
-    private static final int GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX = 0x9049;
-
     public void renderStats() {
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
         long usedMemory = totalMemory - freeMemory;
-        int usedVRAM = 0;
+        int gpuMemoryUsedKB = 0;
         try {
-            int totalMem = glGetInteger(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX);
-            int availMem = glGetInteger(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX);
-            usedVRAM = totalMem - availMem;
+            int gpuMemoryTotalKB = glGetInteger(NVXGPUMemoryInfo.GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX);
+            int gpuMemoryAvailableKB = glGetInteger(NVXGPUMemoryInfo.GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX);
+            gpuMemoryUsedKB = gpuMemoryTotalKB - gpuMemoryAvailableKB;
         } catch (Exception e) {
             Log.error("GPU memory info not available (extension may not be supported).");
         }
-        imGui.render(cameraPosition.x, cameraPosition.y, cameraPosition.z, fps, verticesCount, verticesByteSize, usedMemory, usedVRAM);
+        imGui.render(className, cameraPosition.x, cameraPosition.y, cameraPosition.z, fps, voxelCount, verticesCount,
+                verticesByteSize, usedMemory, gpuMemoryUsedKB);
     }
 
-    public void initImGUI() {
+    private String className = "";
+
+    public void initImGUI(String className) {
+        this.className = className;
         imGui.init(windowHandle);
     }
 

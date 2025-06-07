@@ -78,13 +78,13 @@ public class VoxelEngineMemory extends VoxelEngineBase {
 
         glBufferData(GL_ARRAY_BUFFER, verticesBuffer, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * Float.BYTES, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, vertexByteSize(), 0);
         glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 1, GL_FLOAT, false, 5 * Float.BYTES, (long) 3 * Float.BYTES);
+        glVertexAttribPointer(1, 1, GL_FLOAT, false, vertexByteSize(), (long) 3 * Float.BYTES);
         glEnableVertexAttribArray(1);
 
-        glVertexAttribPointer(2, 1, GL_FLOAT, false, 5 * Float.BYTES, (long) 4 * Float.BYTES);
+        glVertexAttribPointer(2, 1, GL_FLOAT, false, vertexByteSize(), (long) 4 * Float.BYTES);
         glEnableVertexAttribArray(2);
     }
 
@@ -92,17 +92,17 @@ public class VoxelEngineMemory extends VoxelEngineBase {
     public String vertexShaderSource() {
         return """
                                 #version 330 core
-                
+
                 layout(location = 0) in vec3 pos;
                 layout(location = 1) in float colorIndex;
                 layout(location = 2) in float normalIndex;
-                
+
                 uniform mat4 view;
                 uniform mat4 projection;
-                
+
                 out float fragmentColorIndex;
                 out float fragmentNormalIndex;
-                
+
                 void main() {
                     gl_Position = projection * view * vec4(pos, 1.0);
                     fragmentColorIndex = colorIndex;
@@ -115,26 +115,26 @@ public class VoxelEngineMemory extends VoxelEngineBase {
     public String fragmentShaderSource() {
         return """
                                #version 330 core
-                
+
                 in float fragmentColorIndex;
                 in float fragmentNormalIndex;
-                
+
                 out vec4 FragColor;
-                
+
                 layout(std140) uniform colorPalette {
                     vec3 colors[250];
                 };
-                
+
                 layout(std140) uniform normalPalette {
                     vec3 normals[6];
                 };
-                
+
                 void main() {
                     vec3 color = colors[int(fragmentColorIndex)];
                     vec3 normal = normals[int(fragmentNormalIndex)];
-                
+
                     float brightness = 1.0;
-                
+
                     if (normal.y > 0.5) {
                         brightness = 1.0;
                     } else if (normal.y < -0.5) {
@@ -142,7 +142,7 @@ public class VoxelEngineMemory extends VoxelEngineBase {
                     } else {
                         brightness = 0.8;
                     }
-                
+
                     vec3 litColor = color * brightness;
                     FragColor = vec4(litColor, 1.0);
                 }
